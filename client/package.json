@@ -1,0 +1,20 @@
+{
+  "name": "workflow-builder",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "watch": "watchify index.js -o bundle.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "choo": "^3.3.0",
+    "json-editor": "^0.7.28"
+  },
+  "devDependencies": {
+    "browserify": "^13.1.0",
+    "budo": "^9.2.0",
+    "watchify": "^3.7.0"
+  }
+}
