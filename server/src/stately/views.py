@@ -10,7 +10,7 @@ json_serializer = JsonSerializer()
 def serialize_case(case, actor=None):
     data = {
         'id': case.pk,
-        'created': case.created_dt,
+        'created': case.create_dt,
         'workflow': case.workflow.slug,
         'data': case.get_latest_data(),
         'state': {

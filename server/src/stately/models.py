@@ -149,6 +149,12 @@ class Case (models.Model):
     create_dt = models.DateTimeField(auto_now_add=True)
     data = JSONField()
 
+    def get_latest_data(self):
+        data = {}
+        for event in self.events.all().order_by('timestamp'):
+            data.update(event.data)
+        return data
+
 
 class Actor (models.Model):
     email = models.EmailField()
@@ -156,21 +162,19 @@ class Actor (models.Model):
     case = models.ForeignKey('Case')
     expiration_dt = models.DateTimeField()
     valid = models.BooleanField(default=True)
-    
+
     def can_access_case(self, case):
         if not valid:
             return False
-        
         if case != self.case:
             return False
-        
         return True
 
 
 class Event (models.Model):
-    case = models.ForeignKey('Case')
-    actor = models.ForeignKey('Actor')
+    case = models.ForeignKey('Case', related_name='events')
+    actor = models.ForeignKey('Actor', related_name='events')
     timestamp = models.DateTimeField(auto_now_add=True)
-    action = models.ForeignKey('Action')
+    action = models.ForeignKey('Action', related_name='events')
     data = JSONField()
     end_state = models.ForeignKey('State')
