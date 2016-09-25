@@ -2,6 +2,7 @@ import json
 from django.core import serializers
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 from .models import *
 
 JsonSerializer = serializers.get_serializer('json')
@@ -34,6 +35,7 @@ def handle_event(event):
     context['data'] = event.data.copy()
     exec(action.handler, context)
 
+@csrf_exempt
 def get_workflow_or_create_case(request, workflow_slug):
     """
     GET,POST /api/:slug
@@ -59,7 +61,7 @@ def create_case(request, workflow_slug):
     workflow = get_object_or_404(Workflow, slug=workflow_slug)
     case = workflow.initialize_case()
 
-    data = json.load(request)
+    data = json.loads(request.body.decode())
     event = case.create_initial_event(data)
     handle_event(event)
 
@@ -84,6 +86,7 @@ def get_case(request, workflow_slug, case_id):
     data = serialize_case(case, actor)
     return JsonResponse(data)
 
+@csrf_exempt
 def create_event(request, workflow_slug, case_id, action_slug):
     """
     POST /api/:workflow_slug/:case_id/:action_slug
