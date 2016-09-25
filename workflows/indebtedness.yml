@@ -1,0 +1,87 @@
+context:
+  reviewers:
+    water: debbie.mccarty@phila.gov
+    taxes: marisa.waxman@phila.gov
+    parking: jerry.connors@phila.gov
+
+name: Indebtedness
+states:
+  - name: Not started
+    actions:
+      - name: Initiate
+        template:
+          fields:
+            - name: Name
+            - name: Department
+            - name: Driver License Number
+        handler: |
+          send_email(reviewers.water, state='Awaiting Review', actions=['Approve Water', 'Reject Water'])
+          send_email(reviewers.taxes, state='Awaiting Review', actions=['Approve Tax', 'Reject Tax'])
+          send_email(reviewers.parking, state='Awaiting Review', actions=['Approve Parking', 'Reject Parking'])
+
+          change_state('Awaiting Review')
+
+  - name: Awaiting Review
+    actions:
+      - name: Approve Water
+        handler: | # (submittedData, caseData, events)
+          event_names = [event.name for event in events]
+          if 'Approve Taxes' in event_names && 'Approve Parking' in event_names:
+            change_state('Approved'))
+      - name: Reject Water
+        template:
+          fields:
+            - name: Reason
+        handler: |
+          # Allow submitter to resubmit details to request another review
+          send_email(data.submitter_email, state='Awaiting Review', actions=['Resubmit Water'])
+      - name: Resubmit Water
+        template:
+          fields:
+            - name: Water Resolution
+          handler: |
+            # Request another review from Water reviewer
+            send_email(reviewers.water, state='Awaiting Review', actions=['Approve Water', 'Reject Water'])
+
+      - name: Approve Taxes
+        handler: | # (submittedData, caseData, events)
+          event_names = [event.name for event in events]
+          if 'Approve Water' in event_names && 'Approve Parking' in event_names:
+            change_state('Approved'))
+      - name: Reject Taxes
+        template:
+          fields:
+            - name: Reason
+        handler: |
+          # Allow submitter to resubmit details to request another review
+          send_email(data.submitter_email, state='Awaiting Review', actions=['Resubmit Taxes'])
+      - name: Resubmit Taxes
+        template:
+          fields:
+            - name: Taxes Resolution
+          handler: |
+            # Request another review from Taxes reviewer
+            send_email(reviewers.taxes, state='Awaiting Review', actions=['Approve Taxes', 'Reject Taxes'])
+
+      - name: Approve Parking
+        handler: | # (submittedData, caseData, events)
+          event_names = [event.name for event in events]
+          if 'Approve Taxes' in event_names && 'Approve Water' in event_names:
+            change_state('Approved'))
+      - name: Reject Parking
+        template:
+          fields:
+            - name: Reason
+        handler: |
+          # Allow submitter to resubmit water details to request another review
+          send_email(data.submitter_email, state='Awaiting Review', actions=['Resubmit Parking'])
+      - name: Resubmit Parking
+        template:
+          fields:
+            - name: Parking Resolution
+          handler: |
+            # Request another review from Parking reviewer
+            send_email(reviewers.parking, state='Awaiting Review', actions=['Approve Parking', 'Reject Parking'])
+
+  - name: Approved
+      

@@ -1,0 +1,61 @@
+name: Travel Request
+states:  # The first state is always the initial state.
+  - name: Not started
+    actions:
+      - name: Initiate
+        template:
+          fields:
+            - name: Name
+              field_type: text
+              required: true
+            - name: Destination
+              field_type: text
+              required: true
+              description: Where are you going?
+            - name: Cost
+              field_type: number
+              required: true
+            - name: Supervisor Email
+              field_type: email
+              required: true
+        handler: |
+            send_email(data.supervisor_email, state='Awaiting Supervisor Approval', actions=['Approve', 'Reject'])
+            change_state('Awaiting Supervisor Approval')
+
+  - name: Awaiting Supervisor Approval
+    actions:
+      - name: Approve
+        handler: |
+            if data.cost >= 500:
+                send_email(data.dept_head_email, state='CFO Approval', actions=['Approve', 'Reject'])
+                change_state('Awaiting CFO Approval')
+            else:
+                change_state('Approved')
+      - name: Reject
+        template:
+          fields:
+            - name: Reason
+              field_type: paragraph
+        handler: |
+            send_email(data.initiator_email)
+            change_state('Rejected')
+
+  - name: Awaiting CFO Approval
+    actions:
+      - name: Approve
+        handler: |
+            if data.cost >= 500:
+                send_email(data.dept_head_email, state='CFO Approval', actions=['Approve', 'Reject'])
+                change_state('CFO Approval')
+            else:
+                send_email(data.travel_board_email)
+                change_state('Approved')
+      - name: Reject
+        template: # rejection reason
+        handler: |
+            send_email(data.initiator_email)
+            change_state('Rejected')
+
+  - name: Approved
+  
+  - name: Rejected
