@@ -4,17 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "watch": "watchify index.js -o bundle.js"
+    "start": "budo index.js --port $PORT"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "brutusin-json-forms": "brutusin/json-forms",
     "choo": "^3.3.0",
+    "js-yaml": "^3.6.1",
     "json-editor": "^0.7.28"
   },
   "devDependencies": {
-    "browserify": "^13.1.0",
-    "budo": "^9.2.0",
-    "watchify": "^3.7.0"
+    "budo": "^9.2.0"
   }
 }
