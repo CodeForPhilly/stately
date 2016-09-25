@@ -37,8 +37,8 @@ class Workflow (models.Model):
     @property
     def initial_action(self):
         return self.initial_state.actions.first()
-    
-    def initilaize_case(self):
+
+    def initialize_case(self):
         return Case(
             workflow=self,
             state=self.initial_state)
