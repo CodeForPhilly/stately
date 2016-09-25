@@ -19,11 +19,7 @@ from . import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^api/workflows/(?P<slug>[a-z-]+)/initial/', views.get_initial_template),
-    url(r'^api/cases/', views.create_case)
-    url(r'^api/cases/(?P<case_id>[0-9]+', views.handle_case),
+    url(r'^api/(?P<workflow_slug>[a-z-]+)/$', views.get_workflow_or_create_case),
+    url(r'^api/(?P<workflow_slug>[a-z-]+)/(?P<case_id>[0-9]+)/$', views.get_case),
+    url(r'^api/(?P<workflow_slug>[a-z-]+)/(?P<case_id>[0-9]+)/(?P<action_slug>[a-z-]+)/$', views.create_event),
 ]
-
-
-
-    
