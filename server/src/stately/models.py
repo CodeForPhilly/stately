@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.utils.text import slugify
 from jsonfield import JSONField
 
@@ -21,6 +21,7 @@ def uniquely_slugify(value, unique_within_qs, allow_unicode=False, uniquify=None
 class Workflow (models.Model):
     name = models.TextField()
     slug = models.CharField(max_length=64, unique=True)
+    context = JSONField(null=True)
     
     def __str__(self):
         return self.slug
@@ -31,13 +32,16 @@ class Workflow (models.Model):
         
     @property
     def initial_state(self):
-        if self.initial_state:
-            return self.initial_state
-        for state in self.states:
-            if state.initial:
-                self.initial_state = state
-                return state
-        raise ValueError('Workflow missing initial state')
+        return self.states.first()
+    
+    @property
+    def initial_action(self):
+        return self.initial_state.actions.first()
+    
+    def initilaize_case(self):
+        return Case(
+            workflow=self,
+            state=self.initial_state)
     
     @classmethod
     def load_from_config_str(cls, configstr):
@@ -53,18 +57,22 @@ class Workflow (models.Model):
         return cls.load_from_config(config)
 
     @classmethod
+    @transaction.atomic()
     def load_from_config(cls, config):
         if 'states' not in config:
             raise ValueError('Configuration must define some states.')
         
         name = config['name']
+        context = config.get('context')
         
-        workflow = cls(name=name)
+        workflow = cls(name=name, context=context)
         workflow.slug = uniquely_slugify(name, Workflow.objects.all())
         workflow.save()
         
+        initial = True
         for statecfg in config['states']:
-            State.load_from_config(workflow, statecfg)
+            State.load_from_config(workflow, statecfg, initial=initial)
+            initial=False
         
         return workflow
 
@@ -73,9 +81,7 @@ class State (models.Model):
     workflow = models.ForeignKey('Workflow', related_name='states')
     name = models.TextField()
     slug = models.CharField(max_length=64)
-    initial = models.BooleanField(default=False)
-    template_func = models.TextField()
-    
+
     class Meta:
         unique_together = [('slug', 'workflow')]
     
@@ -84,24 +90,17 @@ class State (models.Model):
     
     @property
     def template(self):
-        return eval(self.template_func)
+        return eval(self.template_func)()
     
     @classmethod
+    @transaction.atomic()
     def load_from_config(cls, workflow, config, initial=False):
         if 'name' not in config:
             raise ValueError('No name found in config: {}'.format(config))
-        if 'template' not in config and 'template_func' not in config:
-            raise ValueError('No template or template function found in config: {}'.format(config))
             
         name = config['name']
-        template = config.get('template')
-        
-        if template is not None:
-            template_func = 'lambda *a, **k: """' + template + '"""'
-        else:
-            template_func = config['template_func']
-        
-        state = cls(workflow=workflow, name=name, template_func=template_func)
+
+        state = cls(workflow=workflow, name=name)
         state.slug = uniquely_slugify(name, State.objects.filter(workflow=workflow))
         state.initial = initial
         state.save()
@@ -115,18 +114,29 @@ class State (models.Model):
 
 class Action (models.Model):
     name = models.TextField()
-    handler = models.TextField()
+    handler = models.TextField(default='')
+    template = models.TextField(default='')
     state = models.ForeignKey('State', related_name='actions')
     
     def __str__(self):
         return ':'.join((self.state.workflow.slug, self.state.slug, self.name))
     
     @classmethod
+    @transaction.atomic()
     def load_from_config(cls, state, config):
-        name = config['name']
-        handler = config['handler']
+        import json
         
-        action = cls(state=state, name=name, handler=handler)
+        if 'name' not in config:
+            raise ValueError('No name found in config: {}'.format(config))
+
+        name = config['name']
+        handler = config.get('handler', '')
+        template = config.get('template', '')
+        
+        if not isinstance(template, str):
+            template = json.dumps(template)
+        
+        action = cls(state=state, name=name, template=template, handler=handler)
         action.save()
         return action
     
