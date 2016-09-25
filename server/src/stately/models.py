@@ -190,7 +190,7 @@ class Actor (models.Model):
     valid = models.BooleanField(default=True)
 
     def can_access_case(self, case):
-        if not valid:
+        if not self.valid:
             return False
         if case != self.case:
             return False

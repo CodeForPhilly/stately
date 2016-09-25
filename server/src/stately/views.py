@@ -8,6 +8,12 @@ from .models import *
 JsonSerializer = serializers.get_serializer('json')
 json_serializer = JsonSerializer()
 
+def try_json(string):
+    try:
+        return json.loads(string)
+    except:
+        return string
+
 def serialize_case(case, actor=None):
     data = {
         'id': case.pk,
@@ -16,7 +22,13 @@ def serialize_case(case, actor=None):
         'data': case.get_latest_data(),
         'state': {
             'name': case.state.name,
-            'actions': [],  # TODO: fix this
+            'actions': [
+                {
+                    'name': action.name,
+                    'template': try_json(action.template),
+                }
+                for action in actor.actions.all()
+            ] if actor else [],
         },
         'events': [
             {
