@@ -1,6 +1,7 @@
 from django.db import models, transaction
 from django.utils.text import slugify
 from jsonfield import JSONField
+from uuid import uuid4
 
 
 def uniquely_slugify(value, unique_within_qs, allow_unicode=False, uniquify=None):
@@ -38,10 +39,13 @@ class Workflow (models.Model):
     def initial_action(self):
         return self.initial_state.actions.first()
 
-    def initialize_case(self):
-        return Case(
+    def initialize_case(self, commit=False):
+        case = Case(
             workflow=self,
             state=self.initial_state)
+        if commit:
+            case.save()
+        return case
 
     @classmethod
     def load_from_config_str(cls, configstr):
@@ -97,6 +101,8 @@ class State (models.Model):
     def load_from_config(cls, workflow, config, initial=False):
         if 'name' not in config:
             raise ValueError('No name found in config: {}'.format(config))
+        if initial and len(config.get('actions', [])) != 1:
+            raise ValueError('Initial state must have exactly one action: {}'.format(config))
 
         name = config['name']
 
@@ -155,12 +161,32 @@ class Case (models.Model):
             data.update(event.data)
         return data
 
+    def create_initial_event(self, data):
+        return Event.objects.create(
+            case=self,
+            data=data,
+            actor=None,
+            action=self.workflow.initial_action,
+            end_state=self.state,
+        )
+
+    def create_event(self, action, actor, data=None):
+        return Event.objects.create(
+            case=self,
+            data=data,
+            actor=actor,
+            action=action,
+            end_state=self.state,
+        )
+
 
 class Actor (models.Model):
     email = models.EmailField()
     token = models.CharField(max_length=64)
-    case = models.ForeignKey('Case')
-    expiration_dt = models.DateTimeField()
+    case = models.ForeignKey('Case', related_name='actors')
+    state = models.ForeignKey('State')
+    actions = models.ManyToManyField('Action')
+    expiration_dt = models.DateTimeField(null=True)
     valid = models.BooleanField(default=True)
 
     def can_access_case(self, case):
@@ -170,11 +196,65 @@ class Actor (models.Model):
             return False
         return True
 
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = uuid4()
+        return super().save(*args, **kwargs)
+
 
 class Event (models.Model):
     case = models.ForeignKey('Case', related_name='events')
-    actor = models.ForeignKey('Actor', related_name='events')
+    actor = models.ForeignKey('Actor', related_name='events', null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     action = models.ForeignKey('Action', related_name='events')
     data = JSONField()
     end_state = models.ForeignKey('State')
+
+    def get_handler_context(self):
+        class ObjectDict:
+            def __init__(self, d):
+                super().__setattr__('data', d)
+
+            def __getattr__(self, key):
+                return self.data[key]
+
+            def __setattr__(self, key, value):
+                self.data[key] = value
+
+        context = (self.action.state.workflow.context or {}).copy()
+        context['data'] = ObjectDict((self.data or {}).copy())
+
+        # Add in common methods
+        context['send_email'] = self._send_email
+        context['change_state'] = self._change_state
+
+        return context
+
+
+    def _change_state(self, state):
+        self.case.state = self.case.workflow.states.get(name=state)
+        self.case.save()
+
+    def _send_email(self, email, state, actions=None):
+        from django.core.mail import send_mail
+
+        state = self.case.workflow.states.get(name=state)
+        if actions is None:
+            actions = state.actions.all()
+        else:
+            actions = state.actions.filter(name__in=actions)
+
+        actor = Actor.objects.create(
+            email=email,
+            case=self.case,
+            state=state,
+        )
+        actor.actions=actions
+
+        send_mail(
+            'An email from Stately',
+            ('This is the body of an email from Stately. '
+             'http://localhost:8000/api/{}/{}/?token={}'.format(self.case.workflow.slug, self.case.id, actor.token)),
+            'admin@stately.com',
+            [email],
+        )

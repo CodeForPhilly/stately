@@ -20,7 +20,7 @@ def serialize_case(case, actor=None):
         },
         'events': [
             {
-                'actor': event.actor.email,
+                'actor': event.actor.email if event.actor else None,
                 'timestamp': event.timestamp,
                 'data': event.data
             }
@@ -31,9 +31,10 @@ def serialize_case(case, actor=None):
 
 def handle_event(event):
     action = event.action
-    context = action.state.workflow.context.copy()
-    context['data'] = event.data.copy()
+    context = event.get_handler_context()
     exec(action.handler, context)
+    event.end_state = event.case.state
+    event.save()
 
 @csrf_exempt
 def get_workflow_or_create_case(request, workflow_slug):
@@ -59,7 +60,7 @@ def create_case(request, workflow_slug):
     POST /api/:workflow_slug
     """
     workflow = get_object_or_404(Workflow, slug=workflow_slug)
-    case = workflow.initialize_case()
+    case = workflow.initialize_case(commit=True)
 
     data = json.loads(request.body.decode())
     event = case.create_initial_event(data)
