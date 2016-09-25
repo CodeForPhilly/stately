@@ -42,7 +42,7 @@ def get_workflow_or_create_case(request, workflow_slug):
         return get_workflow(request, workflow_slug)
     elif request.method == 'POST':
         return create_case(request, workflow_slug)
-    
+
 def get_workflow(request, slug):
     """
     GET /api/:slug
@@ -51,18 +51,18 @@ def get_workflow(request, slug):
     case = workflow.initialize_case()
     data = serialize_case(case)
     return JsonResponse(data)
-    
+
 def create_case(request, workflow_slug):
     """
     POST /api/:workflow_slug
     """
     workflow = get_object_or_404(Workflow, slug=workflow_slug)
     case = workflow.initialize_case()
-    
+
     data = json.load(request)
     event = case.create_initial_event(data)
     handle_event(event)
-    
+
     response_data = serialize_case(event.case)
     return JsonResponse(response_data)
 
@@ -77,13 +77,13 @@ def get_case(request, workflow_slug, case_id):
         return JsonResponse({'error': 'Your actor token is invalid.'}, status_code=403)
 
     case = get_object_or_404(Case, workflow__slug=workflow_slug, pk=case_id)
-    
+
     if not actor.can_access_case(case):
         return JsonResponse({'error': 'You do not have access to this case.'}, status_code=403)
-    
+
     data = serialize_case(case, actor)
     return JsonResponse(data)
-    
+
 def create_event(request, workflow_slug, case_id, action_slug):
     """
     POST /api/:workflow_slug/:case_id/:action_slug
