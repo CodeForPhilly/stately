@@ -3,11 +3,27 @@ from django.utils.text import slugify
 from jsonfield import JSONField
 
 
+def uniquely_slugify(value, unique_within_qs, allow_unicode=False, uniquify=None):
+    initial_slug = slug = slugify(value)
+    count = 0
+    if uniquify is None:
+        uniquify = lambda initial, x: initial + str(x)
+        
+    while unique_within_qs.filter(slug=slug).exists():
+        count += 1
+        slug = uniquify(initial_slug, count)
+    
+    return slug
+    
+
 # == Definition Models
 
 class Workflow (models.Model):
     name = models.TextField()
     slug = models.CharField(max_length=64, unique=True)
+    
+    def __str__(self):
+        return self.slug
     
     @property
     def initial_template(self):
@@ -44,7 +60,7 @@ class Workflow (models.Model):
         name = config['name']
         
         workflow = cls(name=name)
-        workflow.slug = slugify(name)
+        workflow.slug = uniquely_slugify(name, Workflow.objects.all())
         workflow.save()
         
         for statecfg in config['states']:
@@ -62,6 +78,9 @@ class State (models.Model):
     
     class Meta:
         unique_together = [('slug', 'workflow')]
+    
+    def __str__(self):
+        return ':'.join((self.workflow.slug, self.slug))
     
     @property
     def template(self):
@@ -83,7 +102,7 @@ class State (models.Model):
             template_func = config['template_func']
         
         state = cls(workflow=workflow, name=name, template_func=template_func)
-        state.slug = slugify(name)
+        state.slug = uniquely_slugify(name, State.objects.filter(workflow=workflow))
         state.initial = initial
         state.save()
         
@@ -98,6 +117,9 @@ class Action (models.Model):
     name = models.TextField()
     handler = models.TextField()
     state = models.ForeignKey('State', related_name='actions')
+    
+    def __str__(self):
+        return ':'.join((self.state.workflow.slug, self.state.slug, self.name))
     
     @classmethod
     def load_from_config(cls, state, config):
