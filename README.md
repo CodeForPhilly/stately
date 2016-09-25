@@ -21,3 +21,5 @@ Government, like many organizations, have a ton of processes. For example:
 This project should eventually enable IT staff in government agencies to configure
 workflows like these. They will generally be initiated with an HTML form, posted
 to an API, which triggers other events.
+
+[More details, API spec, etc.](https://hackpad.com/Workflow-app-ideas-3PWIAukkmki)
