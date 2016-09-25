@@ -1,7 +1,7 @@
 Workflow Builder
 ================
 
-Form-driven workflow designer. Making city government better, one form at a time.
+Form-driven workflow engine. Making city government better, one form at a time.
 
 Government, like many organizations, have a ton of processes. For example:
 
