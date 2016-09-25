@@ -1,4 +1,4 @@
-Workflow Builder
+Stately
 ================
 
 Form-driven workflow engine. Making city government better, one form at a time.
