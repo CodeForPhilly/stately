@@ -4,13 +4,32 @@ from jsonfield import JSONField
 from uuid import uuid4
 
 
-def uniquely_slugify(value, unique_within_qs, allow_unicode=False, uniquify=None):
-    initial_slug = slug = slugify(value)
+def uniquely_slugify(value, unique_within_qs, uniquify=None, slug_field='slug', **kwargs):
+    """
+    Create a unique slugified string with respect to a given queryset.
+
+    Arguments:
+    ---------
+    * unique_within_qs - The queryset to compare the slug against.
+    * slug_field - The name of the field to use as the slug field. Default is
+        `'slug'`.
+    * uniquify - The function used to uniquify the slug if it is already used
+        in the queryset. This function takes two arguments: the *initial_slug*
+        as a string, and a *counter* that represents the number of iterations
+        the uniquifying function has gone through.
+
+    Any other keyword arguments are passed along to the `slugify` function.
+    """
+    # Initialize count and uniquify
     count = 0
     if uniquify is None:
         uniquify = lambda initial, x: initial + str(x)
 
-    while unique_within_qs.filter(slug=slug).exists():
+    # Create an initial slug
+    initial_slug = slug = slugify(value, **kwargs)
+
+    # Check whether the slug is used. Try to uniquify it if it is.
+    while unique_within_qs.filter(**{slug_field: slug}).exists():
         count += 1
         slug = uniquify(initial_slug, count)
 
