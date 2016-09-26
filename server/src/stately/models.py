@@ -250,9 +250,12 @@ class Event (models.Model):
 
         return ObjectDict(context)
 
+    @transaction.atomic()
     def run_handler(self):
         action = self.action
         context = self.get_handler_context()
+
+        # TODO: Log failures in events
         exec(action.handler, context)
 
         # In case the handler code changed the state, update the end state of
