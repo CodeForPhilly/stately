@@ -14,7 +14,7 @@ def try_json(string):
     except:
         return string
 
-def serialize_case(case, actor=None):
+def serialize_case(case, actor=None, default_actions=[]):
     data = {
         'id': case.pk,
         'created': case.create_dt,
@@ -27,7 +27,7 @@ def serialize_case(case, actor=None):
                     'name': action.name,
                     'template': try_json(action.template),
                 }
-                for action in (actor.actions.all() if case.pk else case.state.actions.all())
+                for action in (actor.actions.all() if actor else default_actions)
             ],
         },
         'events': [
@@ -64,7 +64,7 @@ def get_workflow(request, slug):
     """
     workflow = get_object_or_404(Workflow, slug=slug)
     case = workflow.initialize_case()
-    data = serialize_case(case)
+    data = serialize_case(case, default_actions=[case.workflow.initial_action])
     return JsonResponse(data)
 
 def create_case(request, workflow_slug):
