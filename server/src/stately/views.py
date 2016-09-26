@@ -27,8 +27,8 @@ def serialize_case(case, actor=None):
                     'name': action.name,
                     'template': try_json(action.template),
                 }
-                for action in actor.actions.all()
-            ] if actor else [],
+                for action in (actor.actions.all() if case.pk else case.state.actions.all())
+            ],
         },
         'events': [
             {
