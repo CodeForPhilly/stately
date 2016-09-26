@@ -230,24 +230,25 @@ class Event (models.Model):
     end_state = models.ForeignKey('State')
 
     def get_handler_context(self):
-        class ObjectDict:
-            def __init__(self, d):
-                super().__setattr__('data', d)
+        class ObjectDict (dict):
+            def __getitem__(self, key):
+                value = super().__getitem__(key)
+                return ObjectDict(value) if isinstance(value, dict) else value
 
             def __getattr__(self, key):
-                return self.data[key]
+                return self[key]
 
             def __setattr__(self, key, value):
-                self.data[key] = value
+                self[key] = value
 
         context = (self.action.state.workflow.context or {}).copy()
-        context['data'] = ObjectDict((self.data or {}).copy())
+        context['data'] = (self.data or {}).copy()
 
         # Add in common methods
         context['send_email'] = self._send_email
         context['change_state'] = self._change_state
 
-        return context
+        return ObjectDict(context)
 
 
     def _change_state(self, state):
