@@ -41,13 +41,6 @@ def serialize_case(case, actor=None, default_actions=[]):
     }
     return data
 
-def handle_event(event):
-    action = event.action
-    context = event.get_handler_context()
-    exec(action.handler, context)
-    event.end_state = event.case.state
-    event.save()
-
 @csrf_exempt
 def get_workflow_or_create_case(request, workflow_slug):
     """
@@ -76,7 +69,11 @@ def create_case(request, workflow_slug):
 
     data = json.loads(request.body.decode())
     event = case.create_initial_event(data)
-    handle_event(event)
+
+    try:
+        event.run_handler()
+    except Event.HandlerError as e:
+        return JsonResponse({'handler_error': str(e)}, status=500)
 
     response_data = serialize_case(event.case)
     return JsonResponse(response_data)

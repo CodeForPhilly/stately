@@ -250,6 +250,16 @@ class Event (models.Model):
 
         return ObjectDict(context)
 
+    def run_handler(self):
+        action = self.action
+        context = self.get_handler_context()
+        exec(action.handler, context)
+
+        # In case the handler code changed the state, update the end state of
+        # the event.
+        self.end_state = self.case.state
+        self.save()
+
     class HandlerError (Exception):
         # NOTE: handlers should fail loudly.
         pass
