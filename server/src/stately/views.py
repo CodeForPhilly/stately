@@ -113,5 +113,13 @@ def create_event(request, workflow_slug, case_id, action_slug):
     if not actor.can_take_action(action):
         return JsonResponse({'error': 'You do not have permission to take this action.'}, status=403)
 
+    data = json.loads(request.body.decode())
+    event = case.create_event(actor, action, data)
+
+    try:
+        event.run_handler()
+    except Event.HandlerError as e:
+        return JsonResponse({'handler_error': str(e)}, status=500)
+
     response_data = serialize_case(event.case, actor)
     return JsonResponse(response_data)
