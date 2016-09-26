@@ -250,6 +250,9 @@ class Event (models.Model):
 
         return ObjectDict(context)
 
+    class HandlerError (Exception):
+        # NOTE: handlers should fail loudly.
+        pass
 
     def _change_state(self, state):
         self.case.state = self.case.workflow.states.get(name=state)
@@ -262,7 +265,13 @@ class Event (models.Model):
         if actions is None:
             actions = state.actions.all()
         else:
-            actions = state.actions.filter(name__in=actions)
+            action_names = actions
+            actions = state.actions.filter(name__in=action_names)
+            if len(actions) != len(action_names):
+                missing_actions = set(action_names) - set(a.name for a in actions)
+                raise Event.HandlerError(
+                    'The following actions do not exist: {}'
+                    .format(', '.join(missing_actions)))
 
         actor = Actor.objects.create(
             email=email,
