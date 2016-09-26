@@ -89,12 +89,12 @@ def get_case(request, workflow_slug, case_id):
     try:
         actor = Actor.objects.get(token=token, valid=True)
     except Actor.DoesNotExist:
-        return JsonResponse({'error': 'Your actor token is invalid.'}, status_code=403)
+        return JsonResponse({'error': 'Invalid actor token.'}, status=403)
 
     case = get_object_or_404(Case, workflow__slug=workflow_slug, pk=case_id)
 
     if not actor.can_access_case(case):
-        return JsonResponse({'error': 'You do not have access to this case.'}, status_code=403)
+        return JsonResponse({'error': 'You do not have access to this case.'}, status=403)
 
     data = serialize_case(case, actor)
     return JsonResponse(data)
@@ -108,13 +108,13 @@ def create_event(request, workflow_slug, case_id, action_slug):
     try:
         actor = Actor.objects.get(token=token, valid=True)
     except Actor.DoesNotExist:
-        return JsonResponse({'error': 'Your actor token is invalid.'}, status_code=403)
+        return JsonResponse({'error': 'Invalid actor token.'}, status=403)
 
     case = get_object_or_404(Case, workflow__slug=workflow_slug, pk=case_id)
     action = get_object_or_404(Case.state.actions, slug=action_slug)
 
     if not actor.can_take_action(action):
-        return JsonResponse({'error': 'You do not have permission to take this action.'}, status_code=403)
+        return JsonResponse({'error': 'You do not have permission to take this action.'}, status=403)
 
     response_data = serialize_case(event.case, actor)
     return JsonResponse(response_data)
