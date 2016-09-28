@@ -9,6 +9,7 @@ JsonSerializer = serializers.get_serializer('json')
 json_serializer = JsonSerializer()
 
 def try_json(string):
+    """Try decoding a string as JSON"""
     try:
         return json.loads(string)
     except:
@@ -18,7 +19,11 @@ def serialize_case(case, actor=None, default_actions=[]):
     data = {
         'id': case.pk,
         'created': case.create_dt,
-        'workflow': case.workflow.slug,
+        'workflow': {
+            'id': case.workflow.id,
+            'slug': case.workflow.slug,
+            'name': case.workflow.name,
+        },
         'data': case.get_latest_data(),
         'state': {
             'name': case.state.name,
