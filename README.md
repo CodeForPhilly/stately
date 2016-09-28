@@ -49,16 +49,11 @@ python manage.py migrate
 ```
 Load the workflow files from the `workflows` directory into the database using:
 ```bash
-python manage.py shell
+python manage.py workflow_load ../../workflows/*
 ```
-Then within the python shell, type the following:
-```python
-from stately.models import Workflow
-Workflow.load_from_config_file('../../workflows/travel-request.yml')
-```
-Exit the python shell by typing:
-```python
-exit()
+Check the workflows that are loaded into the database using:
+```bash
+python manage.py workflow_list
 ```
 Finally, run the server using:
 ```bash
