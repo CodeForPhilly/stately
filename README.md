@@ -23,3 +23,31 @@ workflows like these. They will generally be initiated with an HTML form, posted
 to an API, which triggers other events.
 
 [More details, API spec, etc.](https://hackpad.com/Workflow-app-ideas-3PWIAukkmki)
+
+## Client usage
+The client application requires [Node JS](https://nodejs.org/en/download/) to build.
+Install dependencies by navigating into the `client` directory in the terminal and run:
+```bash
+npm install
+```
+Afterwards, run a local development server using:
+```bash
+npm start
+```
+
+## Server usage
+The server application requires python. It is recommended that you create a
+[virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/)
+before installing dependencies. Once you've activated your virtual environment,
+install dependencies by navigating to the `server` directory and running:
+```bash
+pip install .
+```
+Then navigate into the `server/src` directory and setup the database using:
+```bash
+python manage.py migrate
+```
+Finally, run the server using:
+```bash
+python manage.py runserver
+```
