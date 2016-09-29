@@ -175,10 +175,16 @@ class Action (models.Model):
 
 class CaseQuerySet (models.QuerySet):
     def awaiting_review_by(self, actor):
-        return self.filter(assignments__actor=actor)
+        if isinstance(actor, str):
+            return self.filter(assignments__actor__email=actor)
+        else:
+            return self.filter(assignments__actor=actor)
 
     def submitted_by(self, actor):
-        return self.filter(events__actor=actor)
+        if isinstance(actor, str):
+            return self.filter(events__actor__email=actor)
+        else:
+            return self.filter(events__actor=actor)
 
 
 class Case (models.Model):
