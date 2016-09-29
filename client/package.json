@@ -10,7 +10,10 @@
   "license": "MIT",
   "dependencies": {
     "choo": "^3.3.0",
-    "get-form-data": "^1.2.5"
+    "get-form-data": "^1.2.5",
+    "sheet-router": "^4.0.0-0",
+    "timeago.js": "^2.0.2",
+    "xtend": "^4.0.1"
   },
   "devDependencies": {
     "budo": "^9.2.0"

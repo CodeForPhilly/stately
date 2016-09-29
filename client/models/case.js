@@ -12,17 +12,24 @@ module.exports = {
       actions: []
     },
     data: {},
-    events: []
+    events: [],
+    currentAction: null
   },
   reducers: {
     receiveCase: (data, state) => {
       return data
+    },
+    setCurrentAction: (actionName, state) => {
+      return { currentAction: actionName }
     }
   },
   effects: {
     fetchCase: (data, state, send, done) => {
-      const { workflow, id } = data
-      const uri = `${endpoint}${workflow}/` + (id ? `{id}/` : '')
+      const { workflow, caseId, token } = data
+      let uri = `${endpoint}${workflow}/`
+      if (caseId) uri += `${caseId}/`
+      if (token) uri += `?token=${token}`
+
       http(uri, { json: true }, (err, response, body) => {
         if (err || response.statusCode !== 200) {
           return done(new Error('Error fetching case'))

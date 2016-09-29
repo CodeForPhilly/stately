@@ -1,14 +1,15 @@
 const choo = require('choo')
 
 const Layout = require('./views/layout')
-const InitiateView = require('./views/initiate')
+const CaseView = require('./views/case')
 
 const app = choo()
 
 app.model(require('./models/case'))
 
 app.router((route) => [
-  route('/:workflow', Layout(InitiateView))
+  route('/:workflow/:caseId', Layout(CaseView)),
+  route('/:workflow', Layout(CaseView))
 ])
 
 const tree = app.start()
