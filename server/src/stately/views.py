@@ -38,6 +38,8 @@ def serialize_case(case, assignment=None, default_actions=[]):
         },
         'events': [
             {
+                'name': event.action.name,
+                'slug': event.action.slug,
                 'actor': event.actor.email if event.actor else None,
                 'timestamp': event.timestamp,
                 'data': event.data
