@@ -168,11 +168,21 @@ class Action (models.Model):
 
 # == Instance Models
 
+class CaseQuerySet (models.QuerySet):
+    def awaiting_review_by(self, actor):
+        return self.filter(assignments__actor=actor)
+
+    def submitted_by(self, actor):
+        return self.filter(events__actor=actor)
+
+
 class Case (models.Model):
     workflow = models.ForeignKey('Workflow')
     state = models.ForeignKey('State')
     create_dt = models.DateTimeField(auto_now_add=True)
     data = JSONField()
+
+    objects = CaseQuerySet.as_manager()
 
     def get_latest_data(self):
         data = {}
