@@ -19,7 +19,7 @@ states:  # The first state is always the initial state.
               field_type: email
               required: true
         handler: |
-            send_email(data.supervisor_email, state='Awaiting Supervisor Approval', actions=['Approve', 'Reject'])
+            assign(data.supervisor_email, state='Awaiting Supervisor Approval', actions=['Approve', 'Reject'], send_email=True)
             change_state('Awaiting Supervisor Approval')
 
   - name: Awaiting Supervisor Approval
@@ -27,7 +27,7 @@ states:  # The first state is always the initial state.
       - name: Approve
         handler: |
             if data.cost >= 500:
-                send_email(data.dept_head_email, state='CFO Approval', actions=['Approve', 'Reject'])
+                assign(data.dept_head_email, state='CFO Approval', actions=['Approve', 'Reject'], send_email=True)
                 change_state('Awaiting CFO Approval')
             else:
                 change_state('Approved')
@@ -37,7 +37,7 @@ states:  # The first state is always the initial state.
             - name: Reason
               field_type: paragraph
         handler: |
-            send_email(data.initiator_email)
+            assign(data.initiator_email, send_email=True)
             change_state('Rejected')
 
   - name: Awaiting CFO Approval
@@ -45,17 +45,17 @@ states:  # The first state is always the initial state.
       - name: Approve
         handler: |
             if data.cost >= 500:
-                send_email(data.dept_head_email, state='CFO Approval', actions=['Approve', 'Reject'])
+                assign(data.dept_head_email, state='CFO Approval', actions=['Approve', 'Reject'], send_email=True)
                 change_state('CFO Approval')
             else:
-                send_email(data.travel_board_email)
+                assign(data.travel_board_email, send_email=True)
                 change_state('Approved')
       - name: Reject
         template: # rejection reason
         handler: |
-            send_email(data.initiator_email)
+            assign(data.initiator_email, send_email=True)
             change_state('Rejected')
 
   - name: Approved
-  
+
   - name: Rejected

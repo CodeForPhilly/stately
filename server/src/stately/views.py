@@ -15,7 +15,7 @@ def try_json(string):
     except:
         return string
 
-def serialize_case(case, actor=None, default_actions=[]):
+def serialize_case(case, assignment=None, default_actions=[]):
     data = {
         'id': case.pk,
         'created': case.create_dt,
@@ -32,7 +32,7 @@ def serialize_case(case, actor=None, default_actions=[]):
                     'name': action.name,
                     'template': try_json(action.template),
                 }
-                for action in (actor.actions.all() if actor else default_actions)
+                for action in (assignment.actions.all() if assignment else default_actions)
             ],
         },
         'events': [
@@ -89,16 +89,16 @@ def get_case(request, workflow_slug, case_id):
     """
     token = request.GET.get('token')
     try:
-        actor = Actor.objects.get(token=token, valid=True)
-    except Actor.DoesNotExist:
+        assignment = Assignment.objects.get(token=token, valid=True)
+    except Assignment.DoesNotExist:
         return JsonResponse({'error': 'Invalid actor token.'}, status=403)
 
     case = get_object_or_404(Case, workflow__slug=workflow_slug, pk=case_id)
 
-    if not actor.can_access_case(case):
+    if not assignment.can_access_case(case):
         return JsonResponse({'error': 'You do not have access to this case.'}, status=403)
 
-    data = serialize_case(case, actor)
+    data = serialize_case(case, assignment)
     return JsonResponse(data)
 
 @csrf_exempt
@@ -108,14 +108,14 @@ def create_event(request, workflow_slug, case_id, action_slug):
     """
     token = request.GET.get('token')
     try:
-        actor = Actor.objects.get(token=token, valid=True)
-    except Actor.DoesNotExist:
+        assignment = Assignment.objects.get(token=token, valid=True)
+    except Assignment.DoesNotExist:
         return JsonResponse({'error': 'Invalid actor token.'}, status=403)
 
     case = get_object_or_404(Case, workflow__slug=workflow_slug, pk=case_id)
     action = get_object_or_404(Case.state.actions, slug=action_slug)
 
-    if not actor.can_take_action(action):
+    if not assignment.can_take_action(action):
         return JsonResponse({'error': 'You do not have permission to take this action.'}, status=403)
 
     data = json.loads(request.body.decode())
@@ -126,5 +126,5 @@ def create_event(request, workflow_slug, case_id, action_slug):
     except Event.HandlerError as e:
         return JsonResponse({'handler_error': str(e)}, status=500)
 
-    response_data = serialize_case(event.case, actor)
+    response_data = serialize_case(event.case, assignment)
     return JsonResponse(response_data)
