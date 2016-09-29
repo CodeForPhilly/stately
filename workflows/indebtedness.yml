@@ -15,9 +15,9 @@ states:
             - name: Department
             - name: Driver License Number
         handler: |
-          send_email(reviewers.water, state='Awaiting Review', actions=['Approve Water', 'Reject Water'])
-          send_email(reviewers.taxes, state='Awaiting Review', actions=['Approve Tax', 'Reject Tax'])
-          send_email(reviewers.parking, state='Awaiting Review', actions=['Approve Parking', 'Reject Parking'])
+          assign(reviewers.water, state='Awaiting Review', actions=['Approve Water', 'Reject Water'], send_email=True)
+          assign(reviewers.taxes, state='Awaiting Review', actions=['Approve Tax', 'Reject Tax'], send_email=True)
+          assign(reviewers.parking, state='Awaiting Review', actions=['Approve Parking', 'Reject Parking'], send_email=True)
 
           change_state('Awaiting Review')
 
@@ -34,14 +34,14 @@ states:
             - name: Reason
         handler: |
           # Allow submitter to resubmit details to request another review
-          send_email(data.submitter_email, state='Awaiting Review', actions=['Resubmit Water'])
+          assign(data.submitter_email, state='Awaiting Review', actions=['Resubmit Water'], send_email=True)
       - name: Resubmit Water
         template:
           fields:
             - name: Water Resolution
           handler: |
             # Request another review from Water reviewer
-            send_email(reviewers.water, state='Awaiting Review', actions=['Approve Water', 'Reject Water'])
+            assign(reviewers.water, state='Awaiting Review', actions=['Approve Water', 'Reject Water'], send_email=True)
 
       - name: Approve Taxes
         handler: | # (submittedData, caseData, events)
@@ -54,14 +54,14 @@ states:
             - name: Reason
         handler: |
           # Allow submitter to resubmit details to request another review
-          send_email(data.submitter_email, state='Awaiting Review', actions=['Resubmit Taxes'])
+          assign(data.submitter_email, state='Awaiting Review', actions=['Resubmit Taxes'], send_email=True)
       - name: Resubmit Taxes
         template:
           fields:
             - name: Taxes Resolution
           handler: |
             # Request another review from Taxes reviewer
-            send_email(reviewers.taxes, state='Awaiting Review', actions=['Approve Taxes', 'Reject Taxes'])
+            assign(reviewers.taxes, state='Awaiting Review', actions=['Approve Taxes', 'Reject Taxes'], send_email=True)
 
       - name: Approve Parking
         handler: | # (submittedData, caseData, events)
@@ -74,14 +74,13 @@ states:
             - name: Reason
         handler: |
           # Allow submitter to resubmit water details to request another review
-          send_email(data.submitter_email, state='Awaiting Review', actions=['Resubmit Parking'])
+          assign(data.submitter_email, state='Awaiting Review', actions=['Resubmit Parking'], send_email=True)
       - name: Resubmit Parking
         template:
           fields:
             - name: Parking Resolution
           handler: |
             # Request another review from Parking reviewer
-            send_email(reviewers.parking, state='Awaiting Review', actions=['Approve Parking', 'Reject Parking'])
+            assign(reviewers.parking, state='Awaiting Review', actions=['Approve Parking', 'Reject Parking'], send_email=True)
 
   - name: Approved
-      

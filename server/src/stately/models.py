@@ -201,6 +201,10 @@ class Case (models.Model):
 
 class Actor (models.Model):
     email = models.EmailField()
+
+
+class Assignment (models.Model):
+    actor = models.ForeignKey('Actor', related_name='assignments')
     token = models.CharField(max_length=64)
     case = models.ForeignKey('Case', related_name='actors')
     state = models.ForeignKey('State')
@@ -245,6 +249,7 @@ class Event (models.Model):
         context['data'] = (self.data or {}).copy()
 
         # Add in common methods
+        context['assign'] = self._assign
         context['send_email'] = self._send_email
         context['change_state'] = self._change_state
 
@@ -271,10 +276,12 @@ class Event (models.Model):
         self.case.state = self.case.workflow.states.get(name=state)
         self.case.save()
 
-    def _send_email(self, email, state, actions=None):
-        from django.core.mail import send_mail
-
+    def _assign(self, email, state, actions=None, send_email=False):
+        # Get a state model instance based on the given state name
         state = self.case.workflow.states.get(name=state)
+
+        # Determine the set of actions to assign. Raise a HandlerError if there
+        # are actions specified that do not exist on the workflow.
         if actions is None:
             actions = state.actions.all()
         else:
@@ -286,17 +293,32 @@ class Event (models.Model):
                     'The following actions do not exist: {}'
                     .format(', '.join(missing_actions)))
 
-        actor = Actor.objects.create(
-            email=email,
+        # Create an assignment (and an actor if one doesn't exist for this
+        # email)
+        actor, _ = Actor.objects.get_or_create(email=email)
+        assignment = Assignment.objects.create(
+            actor=actor,
             case=self.case,
             state=state,
         )
-        actor.actions=actions
+        assignment.actions=actions
+
+        # Send the assignment email, if desired
+        if send_email:
+            self._send_email(assignment.token)
+
+        return assignment.token
+
+    def _send_email(self, assignment_token):
+        from django.core.mail import send_mail
+
+        assignment = assignment_token if isinstance(assignment_token, Assignment) \
+                     else Assignment.objects.select_related('actor').get(token=assignment_token)
 
         send_mail(
             'An email from Stately',
             ('This is the body of an email from Stately. '
-             'http://localhost:8000/api/{}/{}/?token={}'.format(self.case.workflow.slug, self.case.id, actor.token)),
+             'http://localhost:8000/api/{}/{}/?token={}'.format(self.case.workflow.slug, self.case.id, assignment_token)),
             'admin@stately.com',
-            [email],
+            [assignment.actor.email],
         )
