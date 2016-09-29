@@ -204,7 +204,7 @@ class Case (models.Model):
             end_state=self.current_state,
         )
 
-    def create_event(self, action, actor, data=None):
+    def create_event(self, actor, action, data=None):
         return Event.objects.create(
             case=self,
             data=data,
@@ -233,6 +233,12 @@ class Assignment (models.Model):
         if case != self.case:
             return False
         return True
+
+    def can_take_action(self, case, action):
+        return (
+            self.can_access_case(case) and
+            action in self.actions.all()
+        )
 
     def save(self, *args, **kwargs):
         if not self.token:
@@ -291,9 +297,12 @@ class Event (models.Model):
         self.case.current_state = self.case.workflow.states.get(name=state)
         self.case.save()
 
-    def _assign(self, email, state, actions=None, send_email=False):
+    def _assign(self, email, state=None, actions=None, send_email=False):
         # Get a state model instance based on the given state name
-        state = self.case.workflow.states.get(name=state)
+        if state is None:
+            state = self.case.current_state
+        else:
+            state = self.case.workflow.states.get(name=state)
 
         # Determine the set of actions to assign. Raise a HandlerError if there
         # are actions specified that do not exist on the workflow.

@@ -118,11 +118,11 @@ def create_event(request, workflow_slug, case_id, action_slug):
     case = get_object_or_404(Case, workflow__slug=workflow_slug, pk=case_id)
     action = get_object_or_404(case.current_state.actions, slug=action_slug)
 
-    if not assignment.can_take_action(action):
-        return JsonResponse({'error': 'You do not have permission to take this action.'}, status=403)
+    if not assignment.can_take_action(case, action):
+        return JsonResponse({'error': 'You are not assigned to take this action on this case.'}, status=403)
 
     data = json.loads(request.body.decode())
-    event = case.create_event(actor, action, data)
+    event = case.create_event(assignment.actor, action, data)
 
     try:
         event.run_handler()

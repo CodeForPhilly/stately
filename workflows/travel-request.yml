@@ -19,16 +19,16 @@ states:  # The first state is always the initial state.
               field_type: email
               required: true
         handler: |
-            assign(data.supervisor_email, state='Awaiting Supervisor Approval', actions=['Approve', 'Reject'], send_email=True)
             change_state('Awaiting Supervisor Approval')
+            assign(data.supervisor_email, send_email=True)
 
   - name: Awaiting Supervisor Approval
     actions:
       - name: Approve
         handler: |
             if data.cost >= 500:
-                assign(data.dept_head_email, state='CFO Approval', actions=['Approve', 'Reject'], send_email=True)
                 change_state('Awaiting CFO Approval')
+                assign(data.dept_head_email, send_email=True)
             else:
                 change_state('Approved')
       - name: Reject
@@ -37,24 +37,20 @@ states:  # The first state is always the initial state.
             - name: Reason
               field_type: paragraph
         handler: |
-            assign(data.initiator_email, send_email=True)
             change_state('Rejected')
+            assign(data.initiator_email, send_email=True)
 
   - name: Awaiting CFO Approval
     actions:
       - name: Approve
         handler: |
-            if data.cost >= 500:
-                assign(data.dept_head_email, state='CFO Approval', actions=['Approve', 'Reject'], send_email=True)
-                change_state('CFO Approval')
-            else:
-                assign(data.travel_board_email, send_email=True)
-                change_state('Approved')
+            change_state('Approved')
+            assign(data.initiator_email, send_email=True)
       - name: Reject
         template: # rejection reason
         handler: |
-            assign(data.initiator_email, send_email=True)
             change_state('Rejected')
+            assign(data.initiator_email, send_email=True)
 
   - name: Approved
 
