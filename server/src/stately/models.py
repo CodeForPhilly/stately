@@ -61,7 +61,7 @@ class Workflow (models.Model):
     def initialize_case(self, commit=False):
         case = Case(
             workflow=self,
-            state=self.initial_state)
+            current_state=self.initial_state)
         if commit:
             case.save()
         return case
@@ -183,7 +183,7 @@ class CaseQuerySet (models.QuerySet):
 
 class Case (models.Model):
     workflow = models.ForeignKey('Workflow')
-    state = models.ForeignKey('State')
+    current_state = models.ForeignKey('State')
     create_dt = models.DateTimeField(auto_now_add=True)
     data = JSONField()
 
@@ -201,7 +201,7 @@ class Case (models.Model):
             data=data,
             actor=None,
             action=self.workflow.initial_action,
-            end_state=self.state,
+            end_state=self.current_state,
         )
 
     def create_event(self, action, actor, data=None):
@@ -210,7 +210,7 @@ class Case (models.Model):
             data=data,
             actor=actor,
             action=action,
-            end_state=self.state,
+            end_state=self.current_state,
         )
 
 
@@ -280,7 +280,7 @@ class Event (models.Model):
 
         # In case the handler code changed the state, update the end state of
         # the event.
-        self.end_state = self.case.state
+        self.end_state = self.case.current_state
         self.save()
 
     class HandlerError (Exception):
@@ -288,7 +288,7 @@ class Event (models.Model):
         pass
 
     def _change_state(self, state):
-        self.case.state = self.case.workflow.states.get(name=state)
+        self.case.current_state = self.case.workflow.states.get(name=state)
         self.case.save()
 
     def _assign(self, email, state, actions=None, send_email=False):

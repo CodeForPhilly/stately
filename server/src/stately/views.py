@@ -26,14 +26,14 @@ def serialize_case(case, assignment=None, default_actions=[]):
         },
         'data': case.get_latest_data(),
         'state': {
-            'name': case.state.name,
+            'name': case.current_state.name,
             'actions': [
                 {
                     'name': action.name,
                     'slug': action.slug,
                     'template': try_json(action.template),
                 }
-                for action in (assignment.actions.all() if assignment else default_actions)
+                for action in (assignment.actions.filter(state=case.current_state) if assignment else default_actions)
             ],
         },
         'events': [
@@ -114,7 +114,7 @@ def create_event(request, workflow_slug, case_id, action_slug):
         return JsonResponse({'error': 'Invalid actor token.'}, status=403)
 
     case = get_object_or_404(Case, workflow__slug=workflow_slug, pk=case_id)
-    action = get_object_or_404(Case.state.actions, slug=action_slug)
+    action = get_object_or_404(case.current_state.actions, slug=action_slug)
 
     if not assignment.can_take_action(action):
         return JsonResponse({'error': 'You do not have permission to take this action.'}, status=403)
