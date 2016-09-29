@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "budo index.js --live --pushstate --title Stately --css https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    "start": "budo index.js --live --pushstate"
   },
   "author": "",
   "license": "MIT",
