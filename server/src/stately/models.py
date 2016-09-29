@@ -139,9 +139,13 @@ class State (models.Model):
 
 class Action (models.Model):
     name = models.TextField()
+    slug = models.CharField(max_length=64)
     handler = models.TextField(default='')
     template = models.TextField(default='')
     state = models.ForeignKey('State', related_name='actions')
+
+    class Meta:
+        unique_together = [('slug', 'state')]
 
     def __str__(self):
         return ':'.join((self.state.workflow.slug, self.state.slug, self.name))
@@ -162,6 +166,7 @@ class Action (models.Model):
             template = json.dumps(template)
 
         action = cls(state=state, name=name, template=template, handler=handler)
+        action.slug = uniquely_slugify(name, Action.objects.filter(state=state))
         action.save()
         return action
 

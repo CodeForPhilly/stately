@@ -30,6 +30,7 @@ def serialize_case(case, assignment=None, default_actions=[]):
             'actions': [
                 {
                     'name': action.name,
+                    'slug': action.slug,
                     'template': try_json(action.template),
                 }
                 for action in (assignment.actions.all() if assignment else default_actions)
