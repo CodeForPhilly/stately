@@ -17,6 +17,6 @@
   },
   "devDependencies": {
     "budo": "^9.2.0",
-    "choo-log": "^1.4.1"
+    "choo-log": "^1.4.0"
   }
 }
