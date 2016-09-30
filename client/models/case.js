@@ -41,7 +41,7 @@ module.exports = {
       const { workflowSlug, actionSlug, payload, caseId, token } = data
       let uri = `${endpoint}${workflowSlug}/`
       if (caseId) uri += `${caseId}/`
-      if (actionSlug) uri += `${actionSlug}/`
+      if (caseId && actionSlug) uri += `${actionSlug}/`
       if (token) uri += `?token=${token}`
 
       http.post(uri, { json: payload }, (err, response, body) => {
