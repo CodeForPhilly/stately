@@ -358,7 +358,7 @@ class Event (models.Model):
         send_mail(
             'An email from Stately',
             ('This is the body of an email from Stately. '
-             'http://localhost:8000/api/{}/{}/?token={}'.format(self.case.workflow.slug, self.case.id, assignment_token)),
-            'admin@stately.com',
+             'http://localhost:9966/{}/{}/?token={}'.format(self.case.workflow.slug, self.case.id, assignment_token)),
+            'admin@statelyapp.com',
             [assignment.actor.email],
         )
