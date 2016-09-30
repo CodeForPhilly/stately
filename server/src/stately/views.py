@@ -53,13 +53,15 @@ def serialize_case(case, assignment=None, default_actions=[]):
     return data
 
 class ViewError (Exception):
-    def __init__(self, message, error_key='error', status=500):
+    def __init__(self, message, status=500, error_key='error', details=None):
         super().__init__(message)
         self.message = message
         self.status = status
+        self.error_key = error_key
+        self.details = details
 
     def json_response(self):
-        return JsonResponse({e.error_key, e.message}, status=e.status)
+        return JsonResponse({self.error_key: self.message, 'details': self.details}, status=self.status)
 
 def handle_view_errors(view_func):
     @wraps(view_func)
@@ -80,7 +82,15 @@ def try_event_handler(event):
     try:
         event.run_handler()
     except Event.HandlerError as e:
-        raise ViewError(str(e), error_key='handler_error', status=500)
+        raise ViewError(str(e), error_key='handler_error', status=500, details={
+            'actor': e.event.actor.email if e.event.actor else None,
+            'action': e.event.action.slug,
+            'event_data': e.event.data,
+            'case_data': e.event.case.get_latest_data(),
+            'state': e.event.case.current_state.name,
+            'workflow': e.event.case.workflow.slug,
+            'case': e.event.case.id,
+        })
 
 @csrf_exempt
 def get_workflow_or_create_case(request, workflow_slug):
