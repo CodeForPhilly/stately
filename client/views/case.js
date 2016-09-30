@@ -8,7 +8,7 @@ const ActionForm = require('../components/action-form')
 
 module.exports = (state, prev, send) => {
   const { workflow, caseId } = state.params
-  const token = qs(window.location.search).token
+  const token = qs(window.location.search).token // choo v4 makes this easier
 
   // Determine what to show in action section
   const availableActions = state.state.actions
@@ -21,8 +21,11 @@ module.exports = (state, prev, send) => {
 
   return html`
     <div onload=${onLoad}>
-      <h1>${state.workflow.name}</h1>
-      ${state.id ? CurrentCase(state.data, state.events) : ''}
+      <h1>
+        ${state.workflow.name}
+        ${state.id ? html`<small>#${state.id}</small>` : ''}
+      </h1>
+      ${state.id ? CurrentCase(state.data, state.events, state.state) : ''}
       ${availableActions.length > 1
         ? ActionButtons(availableActions, currentAction, onClickAction)
         : ''}
@@ -30,7 +33,9 @@ module.exports = (state, prev, send) => {
     </div>
   `
 
-  function CurrentCase (data, events) {
+  // Separate out current case display layout so we can show it conditionally
+  // while maintaining readability
+  function CurrentCase (data, events, currentState) {
     return html`
       <div class="row case">
         <div class="col-sm-9 data">
@@ -39,7 +44,7 @@ module.exports = (state, prev, send) => {
         <div class="col-sm-3 events">
           <div class="panel panel-default">
             <div class="panel-body">
-              ${CaseHistory(events)}
+              ${CaseHistory(events, currentState)}
             </div>
           </div>
         </div>
