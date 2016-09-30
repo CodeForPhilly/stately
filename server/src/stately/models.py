@@ -350,15 +350,44 @@ class Event (models.Model):
         return assignment.token
 
     def _send_email(self, assignment_token):
+        from django.conf import settings
         from django.core.mail import send_mail
+        from django.template import Context, Template
 
         assignment = assignment_token if isinstance(assignment_token, Assignment) \
                      else Assignment.objects.select_related('actor').get(token=assignment_token)
 
+        body_template = Template(
+            'You have been assigned to {{ workflow.name }} case #{{ case.id }}. '
+                '{% if actions|length == 0 %}'
+                    'Please review the case at the link below:\n\n'
+                '{% else %}'
+                    'You must '
+                    '{% if actions|length == 1 %}'
+                        '{{ actions.0.name }}'
+                    '{% else %}'
+                        '{% for action in actions %}'
+                            '{% if not forloop.first %}, {% endif %}'
+                            '{% if forloop.last %}or {% endif %}'
+                            '{{ action.name }}'
+                        '{% endfor %}'
+                    '{% endif %}'
+                    ' for the case to proceed. Please follow the link below:\n\n'
+                '{% endif %}'
+            '{{ settings.UI_SCHEME }}://{{ settings.UI_HOST }}/{{ workflow.slug }}/{{ case.id }}/?token={{ assignment.token }}'
+        )
+        context = Context({
+            'case': self.case,
+            'assignment': assignment,
+            'actions': assignment.actions.all(),
+            'workflow': self.case.workflow,
+            'settings': settings,
+        })
+
+        subject = '{} Case Assignment'.format(self.case.workflow.name)
         send_mail(
-            'An email from Stately',
-            ('This is the body of an email from Stately. '
-             'http://localhost:9966/{}/{}/?token={}'.format(self.case.workflow.slug, self.case.id, assignment_token)),
+            subject,
+            body_template.render(context),
             'admin@statelyapp.com',
             [assignment.actor.email],
         )
