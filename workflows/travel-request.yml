@@ -1,3 +1,6 @@
+context:
+  cfo_email: chris.donato@mailinator.com
+
 name: Travel Request
 states:  # The first state is always the initial state.
   - name: Not started
@@ -7,6 +10,9 @@ states:  # The first state is always the initial state.
           fields:
             - name: Name
               field_type: text
+              required: true
+            - name: Initiator Email
+              field_type: email
               required: true
             - name: Destination
               field_type: text
@@ -26,15 +32,16 @@ states:  # The first state is always the initial state.
     actions:
       - name: Approve
         handler: |
-            if data.cost >= 500:
+            if int(data.cost) >= 500:
                 change_state('Awaiting CFO Approval')
-                assign(data.dept_head_email, send_email=True)
+                assign(cfo_email, send_email=True)
             else:
                 change_state('Approved')
+                assign(data.initiator_email, send_email=True)
       - name: Reject
         template:
           fields:
-            - name: Reason
+            - name: Supervisor Rejection Reason
               field_type: paragraph
         handler: |
             change_state('Rejected')
@@ -47,7 +54,10 @@ states:  # The first state is always the initial state.
             change_state('Approved')
             assign(data.initiator_email, send_email=True)
       - name: Reject
-        template: # rejection reason
+        template:
+          fields:
+            - name: CFO Rejection Reason
+              field_type: paragraph
         handler: |
             change_state('Rejected')
             assign(data.initiator_email, send_email=True)
