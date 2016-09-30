@@ -22,24 +22,30 @@ module.exports = (state, prev, send) => {
   return html`
     <div onload=${onLoad}>
       <h1>${state.workflow.name}</h1>
-      <div class="row case">
-        <div class="col-md-9 data">
-          ${state.id ? CaseData(state.data) : ''}
-        </div>
-        <div class="col-md-3 events">
-          <div class="panel panel-default">
-            <div class="panel-body">
-              ${state.id ? CaseHistory(state.events) : ''}
-            </div>
-          </div>
-        </div>
-      </div>
+      ${state.id ? CurrentCase(state.data, state.events) : ''}
       ${availableActions.length > 1
         ? ActionButtons(availableActions, currentAction, onClickAction)
         : ''}
       ${currentAction ? ActionForm(currentAction, onSubmitAction) : ''}
     </div>
   `
+
+  function CurrentCase (data, events) {
+    return html`
+      <div class="row case">
+        <div class="col-sm-9 data">
+          ${CaseData(data)}
+        </div>
+        <div class="col-sm-3 events">
+          <div class="panel panel-default">
+            <div class="panel-body">
+              ${CaseHistory(events)}
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+  }
 
   function findAvailableAction (actionName) {
     return availableActions.find((availableAction) => availableAction.name === actionName)
