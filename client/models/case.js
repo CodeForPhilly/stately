@@ -25,8 +25,8 @@ module.exports = {
   },
   effects: {
     fetchCase: (data, state, send, done) => {
-      const { workflow, caseId, token } = data
-      let uri = `${endpoint}${workflow}/`
+      const { workflowSlug, caseId, token } = data
+      let uri = `${endpoint}${workflowSlug}/`
       if (caseId) uri += `${caseId}/`
       if (token) uri += `?token=${token}`
 
@@ -37,12 +37,16 @@ module.exports = {
         send('receiveCase', body, done)
       })
     },
-    createCase: (data, state, send, done) => {
-      const { workflow, payload } = data
-      const uri = `${endpoint}${workflow}/`
+    updateCase: (data, state, send, done) => {
+      const { workflowSlug, actionSlug, payload, caseId, token } = data
+      let uri = `${endpoint}${workflowSlug}/`
+      if (caseId) uri += `${caseId}/`
+      if (actionSlug) uri += `${actionSlug}/`
+      if (token) uri += `?token=${token}`
+
       http.post(uri, { json: payload }, (err, response, body) => {
         if (err || response.statusCode !== 200) {
-          return done(new Error('Error creating case'))
+          return done(new Error('Error updating case'))
         }
         send('receiveCase', body, done)
       })

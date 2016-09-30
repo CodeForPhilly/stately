@@ -13,8 +13,8 @@ if (process.env.NODE_ENV !== 'production') {
 app.model(require('./models/case'))
 
 app.router((route) => [
-  route('/:workflow/:caseId', Layout(CaseView)),
-  route('/:workflow', Layout(CaseView))
+  route('/:workflowSlug/:caseId', Layout(CaseView)),
+  route('/:workflowSlug', Layout(CaseView))
 ])
 
 const tree = app.start()

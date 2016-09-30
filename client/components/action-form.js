@@ -21,7 +21,7 @@ module.exports = (action, onSubmitAction) => {
   function onSubmit (e) {
     if (onSubmitAction) {
       const formData = getFormData(e.target)
-      onSubmitAction(formData)
+      onSubmitAction(action.slug, formData)
     }
     e.preventDefault()
   }

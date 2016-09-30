@@ -7,7 +7,7 @@ const ActionButtons = require('../components/action-buttons')
 const ActionForm = require('../components/action-form')
 
 module.exports = (state, prev, send) => {
-  const { workflow, caseId } = state.params
+  const { workflowSlug, caseId } = state.params
   const token = qs(window.location.search).token // choo v4 makes this easier
 
   // Determine what to show in action section
@@ -57,14 +57,14 @@ module.exports = (state, prev, send) => {
   }
 
   function onLoad () {
-    send('fetchCase', { workflow, caseId, token })
+    send('fetchCase', { workflowSlug, caseId, token })
   }
 
   function onClickAction (actionName) {
     send('setCurrentAction', actionName)
   }
 
-  function onSubmitAction (payload) {
-    send('createCase', { workflow, payload })
+  function onSubmitAction (actionSlug, payload) {
+    send('updateCase', { workflowSlug, actionSlug, payload, caseId, token })
   }
 }
