@@ -288,7 +288,14 @@ class Event (models.Model):
         context = self.get_handler_context()
 
         # TODO: Log failures in events
-        exec(action.handler, context)
+        try:
+            exec(action.handler, context)
+        except Event.HandlerError:
+            raise
+        except Exception as e:
+            raise Event.HandlerError(self,
+                'An error occurred while handling event: ({}) {}'
+                .format(type(e).__name__, str(e)))
 
         # In case the handler code changed the state, update the end state of
         # the event.
@@ -297,7 +304,10 @@ class Event (models.Model):
 
     class HandlerError (Exception):
         # NOTE: handlers should fail loudly.
-        pass
+        def __init__(self, event, message):
+            super().__init__(message)
+            self.message = message
+            self.event = event
 
     def _change_state(self, state):
         self.case.current_state = self.case.workflow.states.get(name=state)
@@ -319,7 +329,7 @@ class Event (models.Model):
             actions = state.actions.filter(name__in=action_names)
             if len(actions) != len(action_names):
                 missing_actions = set(action_names) - set(a.name for a in actions)
-                raise Event.HandlerError(
+                raise Event.HandlerError(self,
                     'The following actions do not exist: {}'
                     .format(', '.join(missing_actions)))
 
