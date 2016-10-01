@@ -16,6 +16,13 @@ def try_json(string):
     except:
         return string
 
+def serialize_actor(actor):
+    data = {
+        'is_anonymous': actor.is_anonymous(),
+        'email': actor.email,
+    }
+    return data
+
 def serialize_case(case, assignment=None, default_actions=[]):
     data = {
         'id': case.pk,
@@ -75,11 +82,18 @@ def handle_view_errors(view_func):
             return e.json_response()
     return wrapper
 
-def try_get_assignment(token):
+def try_get_request_assignment(request):
     try:
-        return Assignment.objects.get(token=token, valid=True)
+        token = request.GET['token']
+    except KeyError:
+        raise ViewError('No actor token specified.', status=401)
+
+    try:
+        assignment = Assignment.objects.get(token=token, valid=True)
+        set_session_actor(request.session, assignment.actor)
+        return assignment
     except Assignment.DoesNotExist:
-        return ViewError('Invalid actor token.', status=403)
+        raise ViewError('Invalid actor token.', status=403)
 
 def try_event_handler(event):
     try:
@@ -97,18 +111,27 @@ def try_event_handler(event):
 
 def get_session_actor(session):
     actor_id = session.get('actor_id')
-
-    # If there is an actor_id in the session, try to get the actor from that ID.
     if actor_id is not None:
+        # If there is an actor_id in the session, try to get the actor from
+        # that ID.
         try:
-            return Actor.get(pk=actor_id)
+            return Actor.objects.get(pk=actor_id)
         except Actor.DoesNotExist:
-            pass
+            return None
 
-    # Create an anonymous actor and store that actor's ID on the session.
-    actor = Actor.objects.create()
+def set_session_actor(session, actor):
     session['actor_id'] = actor.id
     return actor
+
+def get_or_create_session_actor(session):
+    actor = get_session_actor(session)
+    created = False
+    if not actor:
+        # Create an anonymous actor and store that actor's ID on the session.
+        actor = Actor.objects.create()
+        set_session_actor(session, actor)
+        created = True
+    return actor, created
 
 @csrf_exempt
 def get_workflow_or_create_case(request, workflow_slug):
@@ -143,7 +166,7 @@ def create_case(request, workflow_slug):
 
     # Pull the actor off of the session and create an assignment for the case's
     # initial action.
-    actor = get_session_actor(request.session)
+    actor, _ = get_or_create_session_actor(request.session)
     assignment = case.create_initial_assignment(actor)
 
     # Get the data from the request; create an initial event with the data and
@@ -161,11 +184,9 @@ def get_case(request, workflow_slug, case_id):
     """
     GET /api/:workflow_slug/:case_id
     """
-    token = request.GET.get('token')
-
     # Get the assignment and case; verify that the assignment affords access to
     # the case.
-    assignment = try_get_assignment(token)
+    assignment = try_get_request_assignment(request)
     case = get_object_or_404(Case, workflow__slug=workflow_slug, pk=case_id)
 
     if not assignment.can_access_case(case):
@@ -182,11 +203,9 @@ def create_event(request, workflow_slug, case_id, action_slug):
     """
     POST /api/:workflow_slug/:case_id/:action_slug
     """
-    token = request.GET.get('token')
-
     # Get the assignment, case, and action; verify that the assignment affords
     # the action on the case.
-    assignment = try_get_assignment(token)
+    assignment = try_get_request_assignment(request)
     case = get_object_or_404(Case, workflow__slug=workflow_slug, pk=case_id)
     action = get_object_or_404(case.current_state.actions, slug=action_slug)
 
@@ -202,4 +221,31 @@ def create_event(request, workflow_slug, case_id, action_slug):
     # Return the latest state of the case relative to this assignment (TODO:
     # should this be relative to the actor?)
     response_data = serialize_case(event.case, assignment)
+    return JsonResponse(response_data)
+
+@csrf_exempt
+def get_or_forget_current_actor(request):
+    """
+    GET,DELETE /api/actor
+    """
+    if request.method == 'GET':
+        return get_current_actor(request)
+    elif request.method == 'DELETE':
+        return forget_current_actor(request)
+
+def get_current_actor(request):
+    """
+    GET /api/actor
+    """
+    actor = get_session_actor(request.session)
+    response_data = serialize_actor(actor)
+    return JsonResponse(response_data)
+
+@csrf_exempt
+def forget_current_actor(request):
+    """
+    DELETE /api/actor
+    """
+    actor = set_session_actor(request.session, None)
+    response_data = serialize_actor(actor)
     return JsonResponse(response_data)
