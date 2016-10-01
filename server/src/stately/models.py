@@ -201,14 +201,17 @@ class Case (models.Model):
             data.update(event.data)
         return data
 
-    def create_initial_event(self, data):
-        return Event.objects.create(
+    def create_initial_assignment(self, actor):
+        assignment = Assignment.objects.create(
+            actor=actor,
             case=self,
-            data=data,
-            actor=None,
-            action=self.workflow.initial_action,
-            end_state=self.current_state,
+            state=self.workflow.initial_state,
         )
+        assignment.actions=[self.workflow.initial_action]
+        return assignment
+
+    def create_initial_event(self, actor, data):
+        return self.create_event(actor, self.workflow.initial_action, data)
 
     def create_event(self, actor, action, data=None):
         return Event.objects.create(
@@ -221,7 +224,10 @@ class Case (models.Model):
 
 
 class Actor (models.Model):
-    email = models.EmailField()
+    email = models.EmailField(null=True)
+
+    def is_anonymous(self):
+        return self.email is None
 
 
 class Assignment (models.Model):

@@ -26,6 +26,9 @@ def serialize_case(case, assignment=None, default_actions=[]):
             'name': case.workflow.name,
         },
         'data': case.get_latest_data(),
+        'assignment': {
+            'token': assignment.token,
+        } if assignment else None,
         'state': {
             'name': case.current_state.name,
             'actions': [
@@ -92,6 +95,21 @@ def try_event_handler(event):
             'case': e.event.case.id,
         })
 
+def get_session_actor(session):
+    actor_id = session.get('actor_id')
+
+    # If there is an actor_id in the session, try to get the actor from that ID.
+    if actor_id is not None:
+        try:
+            return Actor.get(pk=actor_id)
+        except Actor.DoesNotExist:
+            pass
+
+    # Create an anonymous actor and store that actor's ID on the session.
+    actor = Actor.objects.create()
+    session['actor_id'] = actor.id
+    return actor
+
 @csrf_exempt
 def get_workflow_or_create_case(request, workflow_slug):
     """
@@ -123,14 +141,19 @@ def create_case(request, workflow_slug):
     workflow = get_object_or_404(Workflow, slug=workflow_slug)
     case = workflow.initialize_case(commit=True)
 
+    # Pull the actor off of the session and create an assignment for the case's
+    # initial action.
+    actor = get_session_actor(request.session)
+    assignment = case.create_initial_assignment(actor)
+
     # Get the data from the request; create an initial event with the data and
     # run the event handler.
     data = json.loads(request.body.decode())
-    event = case.create_initial_event(data)
+    event = case.create_initial_event(actor, data)
     try_event_handler(event)
 
     # Return the latest state of the case relative to an anonymous actor.
-    response_data = serialize_case(event.case)
+    response_data = serialize_case(event.case, assignment)
     return JsonResponse(response_data)
 
 @handle_view_errors
