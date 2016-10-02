@@ -2,6 +2,7 @@ const choo = require('choo')
 
 const Layout = require('./views/layout')
 const CaseView = require('./views/case')
+const HomeView = require('./views/home')
 
 const app = choo()
 
@@ -13,8 +14,10 @@ if (process.env.NODE_ENV !== 'production') {
 app.model(require('./models/case'))
 
 app.router((route) => [
-  route('/:workflowSlug/:caseId', Layout(CaseView)),
-  route('/:workflowSlug', Layout(CaseView))
+  route('/', Layout(HomeView)),
+  route('/:workflowSlug', Layout(CaseView), [
+    route('/:caseId', Layout(CaseView))
+  ])
 ])
 
 const tree = app.start()
