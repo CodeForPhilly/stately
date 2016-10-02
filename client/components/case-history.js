@@ -9,6 +9,7 @@ module.exports = (events, currentState) => {
       ${events.map((event) => html`
         <li>
           ${event.action.name}
+          <span class="actor">${event.actor}</span>
           <abbr title=${event.timestamp}>
             ${timeago.format(event.timestamp)}
           </abbr>
