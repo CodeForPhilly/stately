@@ -8,7 +8,7 @@ module.exports = (field) => {
       return html`
         <div class="form-group">
           <label for=${slug}>${field.name}</label>
-          <input type="${field.field_type}" name=${slug} id=${slug} class="form-control" />
+          <input type="${field.field_type}" name=${slug} id=${slug} class="form-control" ${field.required ? 'required' : ''} />
           ${field.description ? html`<p class="help-block">${field.description}</p>` : ''}
         </div>
       `
