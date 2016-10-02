@@ -174,13 +174,13 @@ class Action (models.Model):
 # == Instance Models
 
 class CaseQuerySet (models.QuerySet):
-    def awaiting_review_by(self, actor):
+    def awaiting_action_by(self, actor):
         if isinstance(actor, str):
             return self.filter(assignments__actor__email=actor)
         else:
             return self.filter(assignments__actor=actor)
 
-    def submitted_by(self, actor):
+    def acted_on_by(self, actor):
         if isinstance(actor, str):
             return self.filter(events__actor__email=actor)
         else:
@@ -230,14 +230,15 @@ class Actor (models.Model):
 class Assignment (models.Model):
     actor = models.ForeignKey('Actor', related_name='assignments', null=True)
     token = models.CharField(max_length=64)
-    case = models.ForeignKey('Case', related_name='actors')
+    case = models.ForeignKey('Case', related_name='assignments')
     state = models.ForeignKey('State')
     actions = models.ManyToManyField('Action')
     expiration_dt = models.DateTimeField(null=True)
-    valid = models.BooleanField(default=True)
+    is_valid = models.BooleanField(default=True)
+    is_complete = models.BooleanField(default=False)
 
     def can_access_case(self, case):
-        if not self.valid:
+        if not self.is_valid:
             return False
         if case != self.case:
             return False
@@ -248,6 +249,10 @@ class Assignment (models.Model):
             self.can_access_case(case) and
             action in self.actions.all()
         )
+
+    def complete(self):
+        self.is_complete = True
+        self.save()
 
     def save(self, *args, **kwargs):
         if not self.token:

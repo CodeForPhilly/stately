@@ -94,9 +94,10 @@ def try_get_request_assignment(request):
     except Assignment.DoesNotExist:
         raise ViewError('Invalid actor token.', status=403)
 
-def try_event_handler(event):
+def try_event_handler(assignment, event):
     try:
         event.run_handler()
+        assignment.complete()
     except Event.HandlerError as e:
         raise ViewError(str(e), error_key='handler_error', status=500, details={
             'actor': e.event.actor.email if e.event.actor else None,
@@ -106,8 +107,8 @@ def try_event_handler(event):
             'state': e.event.case.current_state.name,
             'workflow': e.event.case.workflow.slug,
             'case': e.event.case.id,
-        })
 
+        })
 def get_session_actor(session):
     actor_id = session.get('actor_id')
     if actor_id is not None:
@@ -163,7 +164,7 @@ def create_case(request, workflow_slug):
     # run the event handler.
     data = json.loads(request.body.decode())
     event = case.create_initial_event(actor, data)
-    try_event_handler(event)
+    try_event_handler(assignment, event)
 
     # Return the latest state of the case relative to an anonymous actor.
     response_data = serialize_case(event.case, assignment)
@@ -206,7 +207,7 @@ def create_event(request, workflow_slug, case_id, action_slug):
     # event handler.
     data = json.loads(request.body.decode())
     event = case.create_event(assignment.actor, action, data)
-    try_event_handler(event)
+    try_event_handler(assignment, event)
 
     # Return the latest state of the case relative to this assignment (TODO:
     # should this be relative to the actor?)
@@ -238,4 +239,22 @@ def forget_current_actor(request):
     """
     actor = set_session_actor(request.session, None)
     response_data = serialize_actor(actor)
+    return JsonResponse(response_data)
+
+def get_cases_awaiting_action(request):
+    """
+    GET /api/cases/awaiting
+    """
+    actor = get_session_actor(request.session)
+    cases = Case.objects.awaiting_review_by(actor)
+    response_data = {'cases': [serialize_case(c) for c in cases]}
+    return JsonResponse(response_data)
+
+def get_cases_acted_on(request):
+    """
+    GET /api/cases/acted
+    """
+    actor = get_session_actor(request.session)
+    cases = Case.objects.acted_on_by(actor)
+    response_data = {'cases': [serialize_case(c) for c in cases]}
     return JsonResponse(response_data)
