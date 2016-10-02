@@ -18,9 +18,8 @@ def try_json(string):
 
 def serialize_actor(actor):
     data = {
-        'is_anonymous': actor.is_anonymous(),
         'email': actor.email,
-    }
+    } if actor else None
     return data
 
 def serialize_case(case, assignment=None, default_actions=[]):
@@ -123,15 +122,6 @@ def set_session_actor(session, actor):
     session['actor_id'] = actor.id
     return actor
 
-def get_or_create_session_actor(session):
-    actor = get_session_actor(session)
-    created = False
-    if not actor:
-        # Create an anonymous actor and store that actor's ID on the session.
-        actor = Actor.objects.create()
-        set_session_actor(session, actor)
-        created = True
-    return actor, created
 
 @csrf_exempt
 def get_workflow_or_create_case(request, workflow_slug):
@@ -166,7 +156,7 @@ def create_case(request, workflow_slug):
 
     # Pull the actor off of the session and create an assignment for the case's
     # initial action.
-    actor, _ = get_or_create_session_actor(request.session)
+    actor = get_session_actor(request.session)
     assignment = case.create_initial_assignment(actor)
 
     # Get the data from the request; create an initial event with the data and

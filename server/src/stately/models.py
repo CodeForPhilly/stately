@@ -201,7 +201,7 @@ class Case (models.Model):
             data.update(event.data)
         return data
 
-    def create_initial_assignment(self, actor):
+    def create_initial_assignment(self, actor=None):
         assignment = Assignment.objects.create(
             actor=actor,
             case=self,
@@ -210,8 +210,8 @@ class Case (models.Model):
         assignment.actions=[self.workflow.initial_action]
         return assignment
 
-    def create_initial_event(self, actor, data):
-        return self.create_event(actor, self.workflow.initial_action, data)
+    def create_initial_event(self, actor=None, data=None):
+        return self.create_event(actor, self.workflow.initial_action, data=data)
 
     def create_event(self, actor, action, data=None):
         return Event.objects.create(
@@ -224,14 +224,11 @@ class Case (models.Model):
 
 
 class Actor (models.Model):
-    email = models.EmailField(null=True)
-
-    def is_anonymous(self):
-        return self.email is None
+    email = models.EmailField()
 
 
 class Assignment (models.Model):
-    actor = models.ForeignKey('Actor', related_name='assignments')
+    actor = models.ForeignKey('Actor', related_name='assignments', null=True)
     token = models.CharField(max_length=64)
     case = models.ForeignKey('Case', related_name='actors')
     state = models.ForeignKey('State')
