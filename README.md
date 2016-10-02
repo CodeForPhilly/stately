@@ -59,3 +59,7 @@ Finally, run the server using:
 ```bash
 python manage.py runserver
 ```
+
+## Prior art
+* [geekq/workflow](https://github.com/geekq/workflow)
+* [viewflow](http://viewflow.io/)
