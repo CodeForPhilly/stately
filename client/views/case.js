@@ -65,6 +65,10 @@ module.exports = (state, prev, send) => {
   }
 
   function onSubmitAction (actionSlug, payload) {
-    send('updateCase', { workflowSlug, actionSlug, payload, caseId, token })
+    if (caseId) {
+      send('updateCase', { workflowSlug, actionSlug, payload, caseId, token })
+    } else {
+      send('createCase', { workflowSlug, payload })
+    }
   }
 }
