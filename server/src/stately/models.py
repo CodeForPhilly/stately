@@ -176,9 +176,11 @@ class Action (models.Model):
 class CaseQuerySet (models.QuerySet):
     def awaiting_action_by(self, actor):
         if isinstance(actor, str):
-            return self.filter(assignments__actor__email=actor)
+            assignments = Assignment.objects.filter(actor__email=actor)
         else:
-            return self.filter(assignments__actor=actor)
+            assignments = Assignment.objects.filter(actor=actor)
+        assignment_ids = assignments.filter(is_complete=False).only('id').all()
+        return self.filter(assignments__id__in=assignment_ids)
 
     def acted_on_by(self, actor):
         if isinstance(actor, str):
