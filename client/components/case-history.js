@@ -5,9 +5,9 @@ const timeago = new Timeago()
 
 module.exports = (events, currentState) => {
   return html`
-    <ul>
+    <ul class="list-group">
       ${events.map((event) => html`
-        <li>
+        <li class="list-group-item">
           ${event.action.name}
           <span class="actor">${event.actor}</span>
           <abbr title=${event.timestamp}>
@@ -15,7 +15,7 @@ module.exports = (events, currentState) => {
           </abbr>
         </li>
       `)}
-      <li><b>${currentState.name}</b></li>
+      <li class="list-group-item"><b>${currentState.name}</b></li>
     </ul>
   `
 }
