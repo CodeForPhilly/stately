@@ -88,7 +88,7 @@ def try_get_request_assignment(request):
         raise ViewError('No actor token specified.', status=401)
 
     try:
-        assignment = Assignment.objects.get(token=token, valid=True)
+        assignment = Assignment.objects.get(token=token, is_valid=True)
         set_session_actor(request.session, assignment.actor)
         return assignment
     except Assignment.DoesNotExist:
@@ -246,7 +246,7 @@ def get_cases_awaiting_action(request):
     GET /api/cases/awaiting
     """
     actor = get_session_actor(request.session)
-    cases = Case.objects.awaiting_review_by(actor)
+    cases = Case.objects.awaiting_action_by(actor)
     response_data = {'cases': [serialize_case(c) for c in cases]}
     return JsonResponse(response_data)
 
