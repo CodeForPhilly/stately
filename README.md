@@ -46,7 +46,7 @@ states:
             change_state('Approved')
             assign(data.initiator_email, send_email=True)
       - name: Reject
-        # ......
+        # ...... (see the rest in workflows/travel-request.yml)
 ```
 
 This renders a form that, when submitted, kicks off the `handler`, changing
@@ -55,11 +55,11 @@ tokens.
 
 ![screenshot of travel request form](http://i.imgur.com/CpCk3Is.png)
 
-![screenshot of submitted travel request](http://i.imgur.com/LmQUZ1F.png)
-
 The aim of this approach is to provide a balance between configurability and
 flexibility, accommodating many workflows out-of-the-box, with an option
 to write basic python code for any advanced / edge-case workflows.
+
+![screenshot of submitted travel request](http://i.imgur.com/LmQUZ1F.png)
 
 ## Example workflows
 We're building with the following use cases from Philadelphia City Government
@@ -81,7 +81,7 @@ in mind. Have your own that comes to mind?
 
 ## API
 
-[More details, API spec, etc.](https://hackpad.com/Workflow-app-ideas-3PWIAukkmki)
+Brainstorming, API spec, etc. is [on a hackpad](https://hackpad.com/Workflow-app-ideas-3PWIAukkmki)
 
 ## Client usage
 The client application requires [Node JS](https://nodejs.org/en/download/) to build.
@@ -102,21 +102,21 @@ install dependencies by navigating to the `server` directory and running:
 ```bash
 pip install .
 ```
-Then navigate into the `server/src` directory and setup the database using:
+Then setup the database using:
 ```bash
-python manage.py migrate
+python src/manage.py migrate
 ```
 Load the workflow files from the `workflows` directory into the database using:
 ```bash
-python manage.py workflow_load ../../workflows/*
+python src/manage.py workflow_load ../workflows/*
 ```
 Check the workflows that are loaded into the database using:
 ```bash
-python manage.py workflow_list
+python src/manage.py workflow_list
 ```
 Finally, run the server using:
 ```bash
-python manage.py runserver
+python src/manage.py runserver
 ```
 
 ## Prior art
