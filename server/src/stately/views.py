@@ -119,7 +119,7 @@ def get_session_actor(session):
             return None
 
 def set_session_actor(session, actor):
-    session['actor_id'] = actor.id
+    session['actor_id'] = actor.id if actor else None
     return actor
 
 
