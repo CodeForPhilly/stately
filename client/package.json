@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "budo index.js --live --pushstate"
+    "start": "budo src/index.js --live --pushstate"
   },
   "author": "",
   "license": "MIT",
