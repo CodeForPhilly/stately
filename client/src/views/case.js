@@ -11,10 +11,10 @@ module.exports = (state, prev, send) => {
   const token = qs(window.location.search).token // choo v4 makes this easier
 
   // Determine what to show in action section
-  const availableActions = state.state.actions
+  const availableActions = state.case.state.actions
   let currentAction
-  if (state.currentAction) {
-    currentAction = findAvailableAction(state.currentAction)
+  if (state.case.currentAction) {
+    currentAction = findAvailableAction(state.case.currentAction)
   } else if (availableActions.length === 1) {
     currentAction = availableActions[0]
   }
@@ -22,10 +22,10 @@ module.exports = (state, prev, send) => {
   return html`
     <div onload=${onLoad}>
       <h1>
-        ${state.workflow.name}
-        ${state.id ? html`<small>#${state.id}</small>` : ''}
+        ${state.case.workflow.name}
+        ${state.case.id ? html`<small>#${state.case.id}</small>` : ''}
       </h1>
-      ${state.id ? CurrentCase(state.data, state.events, state.state) : ''}
+      ${state.case.id ? CurrentCase(state.case.data, state.case.events, state.case.state) : ''}
       ${availableActions.length > 1
         ? ActionButtons(availableActions, currentAction, onClickAction)
         : ''}
@@ -53,18 +53,18 @@ module.exports = (state, prev, send) => {
   }
 
   function onLoad () {
-    send('fetchCase', { workflowSlug, caseId, token })
+    send('case:fetch', { workflowSlug, caseId, token })
   }
 
   function onClickAction (actionName) {
-    send('setCurrentAction', actionName)
+    send('case:setCurrentAction', actionName)
   }
 
   function onSubmitAction (actionSlug, payload) {
     if (caseId) {
-      send('updateCase', { workflowSlug, actionSlug, payload, caseId, token })
+      send('case:update', { workflowSlug, actionSlug, payload, caseId, token })
     } else {
-      send('createCase', { workflowSlug, payload })
+      send('case:create', { workflowSlug, payload })
     }
   }
 }
