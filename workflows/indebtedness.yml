@@ -12,11 +12,15 @@ states:
         template:
           fields:
             - name: Name
+              required: true
             - name: Department
             - name: Driver License Number
+            - name: Submitter Email
+              field_type: email
+              required: true
         handler: |
           assign(reviewers.water, state='Awaiting Review', actions=['Approve Water', 'Reject Water'], send_email=True)
-          assign(reviewers.taxes, state='Awaiting Review', actions=['Approve Tax', 'Reject Tax'], send_email=True)
+          assign(reviewers.taxes, state='Awaiting Review', actions=['Approve Taxes', 'Reject Taxes'], send_email=True)
           assign(reviewers.parking, state='Awaiting Review', actions=['Approve Parking', 'Reject Parking'], send_email=True)
 
           change_state('Awaiting Review')
@@ -25,7 +29,7 @@ states:
     actions:
       - name: Approve Water
         handler: | # (submittedData, caseData, events)
-          event_names = [event.name for event in events]
+          event_names = [event.action.name for event in events]
           if 'Approve Taxes' in event_names && 'Approve Parking' in event_names:
             change_state('Approved'))
       - name: Reject Water
@@ -45,7 +49,7 @@ states:
 
       - name: Approve Taxes
         handler: | # (submittedData, caseData, events)
-          event_names = [event.name for event in events]
+          event_names = [event.action.name for event in events]
           if 'Approve Water' in event_names && 'Approve Parking' in event_names:
             change_state('Approved'))
       - name: Reject Taxes
@@ -65,7 +69,7 @@ states:
 
       - name: Approve Parking
         handler: | # (submittedData, caseData, events)
-          event_names = [event.name for event in events]
+          event_names = [event.action.name for event in events]
           if 'Approve Taxes' in event_names && 'Approve Water' in event_names:
             change_state('Approved'))
       - name: Reject Parking

@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "budo index.js --live --pushstate"
+    "start": "budo src/index.js:bundle.js --live --pushstate",
+    "build": "browserify src/index.js -o bundle.js"
   },
   "author": "",
   "license": "MIT",
@@ -16,6 +17,7 @@
     "xtend": "^4.0.1"
   },
   "devDependencies": {
+    "browserify": "^13.1.0",
     "budo": "^9.2.0",
     "choo-log": "^1.4.0"
   }

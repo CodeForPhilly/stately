@@ -42,11 +42,7 @@ module.exports = (state, prev, send) => {
           ${CaseData(data)}
         </div>
         <div class="col-sm-3 events">
-          <div class="panel panel-default">
-            <div class="panel-body">
-              ${CaseHistory(events, currentState)}
-            </div>
-          </div>
+          ${CaseHistory(events, currentState)}
         </div>
       </div>
     `
