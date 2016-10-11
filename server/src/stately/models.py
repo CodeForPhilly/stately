@@ -179,8 +179,7 @@ class CaseQuerySet (models.QuerySet):
             assignments = Assignment.objects.filter(actor__email=actor)
         else:
             assignments = Assignment.objects.filter(actor=actor)
-        assignment_ids = assignments.filter(is_complete=False).only('id').all()
-        return self.filter(assignments__id__in=assignment_ids)
+        return self.filter(assignments__in=assignments.filter(is_complete=False))
 
     def acted_on_by(self, actor):
         if isinstance(actor, str):
