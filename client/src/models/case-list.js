@@ -15,7 +15,7 @@ module.exports = {
   effects: {
     fetch: (data, state, send, done) => {
       const uri = `${endpoint}cases/awaiting/`
-      http(uri, { json: true }, (err, response, body) => {
+      http(uri, { json: true, withCredentials: true }, (err, response, body) => {
         if (err || response.statusCode !== 200) return done(new Error('Error fetching case list'))
         send('caseList:receive', body.cases, done)
       })

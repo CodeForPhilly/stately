@@ -31,7 +31,7 @@ module.exports = {
       if (caseId) uri += `${caseId}/`
       if (token) uri += `?token=${token}`
 
-      http(uri, { json: true }, (err, response, body) => {
+      http(uri, { json: true, withCredentials: true }, (err, response, body) => {
         if (err || response.statusCode !== 200) return done(new Error('Error fetching case'))
         send('case:receive', body, done)
       })
@@ -41,7 +41,7 @@ module.exports = {
       let uri = `${endpoint}${workflowSlug}/${caseId}/${actionSlug}/`
       if (token) uri += `?token=${token}`
 
-      http.post(uri, { json: payload }, (err, response, body) => {
+      http.post(uri, { json: payload, withCredentials: true }, (err, response, body) => {
         if (err || response.statusCode !== 200) return done(new Error('Error updating case'))
         send('case:receive', body, done)
       })
@@ -51,7 +51,7 @@ module.exports = {
       const { workflowSlug, payload } = data
       const uri = `${endpoint}${workflowSlug}/`
 
-      http.post(uri, { json: payload }, (err, response, body) => {
+      http.post(uri, { json: payload, withCredentials: true }, (err, response, body) => {
         if (err || response.statusCode !== 200) return done(new Error('Error creating case'))
         send('case:receive', body, () => {
           const newPath = `${workflowSlug}/${body.id}/?token=${body.assignment.token}`
