@@ -226,7 +226,7 @@ class Case (models.Model):
         )
 
     def save(self, *args, **kwargs):
-        if self.id is None:
+        if not self.id:
             self.id = uuid4()
         return super().save(*args, **kwargs)
 
