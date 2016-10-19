@@ -28,10 +28,10 @@ states:
   - name: Awaiting Review
     actions:
       - name: Approve Water
-        handler: | # (submittedData, caseData, events)
-          event_names = [event.action.name for event in events]
-          if 'Approve Taxes' in event_names && 'Approve Parking' in event_names:
-            change_state('Approved'))
+        handler: |
+          event_names = [event['action']['name'] for event in events]
+          if 'Approve Taxes' in event_names and 'Approve Parking' in event_names:
+            change_state('Approved')
       - name: Reject Water
         template:
           fields:
@@ -43,15 +43,15 @@ states:
         template:
           fields:
             - name: Water Resolution
-          handler: |
-            # Request another review from Water reviewer
-            assign(reviewers.water, state='Awaiting Review', actions=['Approve Water', 'Reject Water'], send_email=True)
+        handler: |
+          # Request another review from Water reviewer
+          assign(reviewers.water, state='Awaiting Review', actions=['Approve Water', 'Reject Water'], send_email=True)
 
       - name: Approve Taxes
-        handler: | # (submittedData, caseData, events)
-          event_names = [event.action.name for event in events]
-          if 'Approve Water' in event_names && 'Approve Parking' in event_names:
-            change_state('Approved'))
+        handler: |
+          event_names = [event['action']['name'] for event in events]
+          if 'Approve Water' in event_names and 'Approve Parking' in event_names:
+            change_state('Approved')
       - name: Reject Taxes
         template:
           fields:
@@ -63,15 +63,15 @@ states:
         template:
           fields:
             - name: Taxes Resolution
-          handler: |
-            # Request another review from Taxes reviewer
-            assign(reviewers.taxes, state='Awaiting Review', actions=['Approve Taxes', 'Reject Taxes'], send_email=True)
+        handler: |
+          # Request another review from Taxes reviewer
+          assign(reviewers.taxes, state='Awaiting Review', actions=['Approve Taxes', 'Reject Taxes'], send_email=True)
 
       - name: Approve Parking
-        handler: | # (submittedData, caseData, events)
-          event_names = [event.action.name for event in events]
-          if 'Approve Taxes' in event_names && 'Approve Water' in event_names:
-            change_state('Approved'))
+        handler: |
+          event_names = [event['action']['name'] for event in events]
+          if 'Approve Taxes' in event_names and 'Approve Water' in event_names:
+            change_state('Approved')
       - name: Reject Parking
         template:
           fields:
@@ -83,8 +83,8 @@ states:
         template:
           fields:
             - name: Parking Resolution
-          handler: |
-            # Request another review from Parking reviewer
-            assign(reviewers.parking, state='Awaiting Review', actions=['Approve Parking', 'Reject Parking'], send_email=True)
+        handler: |
+          # Request another review from Parking reviewer
+          assign(reviewers.parking, state='Awaiting Review', actions=['Approve Parking', 'Reject Parking'], send_email=True)
 
   - name: Approved
