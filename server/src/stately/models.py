@@ -295,6 +295,7 @@ class Event (models.Model):
         context = (self.action.state.workflow.context or {}).copy()
         context['data'] = {**self.case.get_latest_data(), **self.data}
         context['events'] = serialize_case_events(self.case)
+        context['actor'] = serialize_actor(self.actor)
 
         # Add in common methods
         context['assign'] = self._assign
