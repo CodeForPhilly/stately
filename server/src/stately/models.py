@@ -296,6 +296,9 @@ class Event (models.Model):
         context['send_email'] = self._send_email
         context['change_state'] = self._change_state
 
+        # Add in the ability to raise errors
+        context['error'] = self.HandlerError
+
         return ObjectDict(context)
 
     def get_assigner_email(self):
