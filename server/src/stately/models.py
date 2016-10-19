@@ -213,17 +213,20 @@ class Case (models.Model):
         assignment.actions=[self.workflow.initial_action]
         return assignment
 
-    def create_initial_event(self, actor=None, data=None):
-        return self.create_event(actor, self.workflow.initial_action, data=data)
+    def create_initial_event(self, actor=None, data=None, commit=False):
+        return self.create_event(actor, self.workflow.initial_action, data=data, commit=commit)
 
-    def create_event(self, actor, action, data=None):
-        return Event.objects.create(
+    def create_event(self, actor, action, data=None, commit=False):
+        event = Event(
             case=self,
             data=data,
             actor=actor,
             action=action,
             end_state=self.current_state,
         )
+        if commit:
+            event.save()
+        return event
 
     def save(self, *args, **kwargs):
         if not self.id:
