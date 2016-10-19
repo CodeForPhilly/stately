@@ -3,6 +3,7 @@ from django.db import models, transaction
 from django.utils.text import slugify
 from jsonfield import JSONField
 from uuid import uuid4
+from .serializers import serialize_actor, serialize_case_events
 
 
 def uniquely_slugify(value, unique_within_qs, uniquify=None, slug_field='slug', **kwargs):
@@ -293,6 +294,7 @@ class Event (models.Model):
 
         context = (self.action.state.workflow.context or {}).copy()
         context['data'] = {**self.case.get_latest_data(), **self.data}
+        context['events'] = serialize_case_events(self.case)
 
         # Add in common methods
         context['assign'] = self._assign

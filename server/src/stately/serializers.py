@@ -37,18 +37,25 @@ def serialize_case(case, assignment=None, default_actions=[]):
                 for action in (assignment.actions.filter(state=case.current_state) if assignment else default_actions)
             ],
         },
-        'events': [
-            {
-                'action': {
-                    'name': event.action.name,
-                    'slug': event.action.slug,
-                },
-                'actor': event.actor.email if event.actor else None,
-                'timestamp': event.timestamp,
-                'data': event.data
-            }
-            for event in case.events.all()
-        ],
+        'events': serialize_case_events(case),
     }
     return data
 
+def serialize_case_events(case):
+    data = [
+        serialize_event(event)
+        for event in case.events.all()
+    ]
+    return data
+
+def serialize_event(event):
+    data = {
+        'action': {
+            'name': event.action.name,
+            'slug': event.action.slug,
+        },
+        'actor': event.actor.email if event.actor else None,
+        'timestamp': event.timestamp,
+        'data': event.data
+    }
+    return data
