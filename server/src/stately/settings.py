@@ -129,6 +129,7 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/1.10/topics/email/
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'admin@statelyapp.com'
 
 
 # UI Settings

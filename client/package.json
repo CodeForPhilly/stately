@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "budo src/index.js:bundle.js --live --pushstate",
-    "build": "browserify src/index.js -o bundle.js"
+    "start": "budo src/index.js:bundle.js --live --pushstate -- -t sheetify/transform",
+    "build": "browserify src/index.js -o bundle.js -t sheetify/transform"
   },
   "author": "",
   "license": "MIT",
@@ -13,6 +13,7 @@
     "choo": "^3.3.0",
     "get-form-data": "^1.2.5",
     "sheet-router": "^4.0.0-0",
+    "sheetify": "^5.1.1",
     "timeago.js": "^2.0.2",
     "xtend": "^4.0.1"
   },

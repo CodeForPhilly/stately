@@ -20,6 +20,8 @@ from . import views
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^api/actor/$', views.get_or_forget_current_actor),
+    url(r'^api/cases/awaiting/$', views.get_cases_awaiting_action),
+    url(r'^api/cases/acted/$', views.get_cases_acted_on),
     url(r'^api/(?P<workflow_slug>[a-z-]+)/$', views.get_workflow_or_create_case),
     url(r'^api/(?P<workflow_slug>[a-z-]+)/(?P<case_id>[0-9]+)/$', views.get_case),
     url(r'^api/(?P<workflow_slug>[a-z-]+)/(?P<case_id>[0-9]+)/(?P<action_slug>[a-z-]+)/$', views.create_event),

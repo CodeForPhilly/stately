@@ -1,7 +1,9 @@
+from django.conf import settings
 from django.db import models, transaction
 from django.utils.text import slugify
 from jsonfield import JSONField
 from uuid import uuid4
+from .serializers import serialize_actor, serialize_case_events
 
 
 def uniquely_slugify(value, unique_within_qs, uniquify=None, slug_field='slug', **kwargs):
@@ -174,13 +176,14 @@ class Action (models.Model):
 # == Instance Models
 
 class CaseQuerySet (models.QuerySet):
-    def awaiting_review_by(self, actor):
+    def awaiting_action_by(self, actor):
         if isinstance(actor, str):
-            return self.filter(assignments__actor__email=actor)
+            assignments = Assignment.objects.filter(actor__email=actor)
         else:
-            return self.filter(assignments__actor=actor)
+            assignments = Assignment.objects.filter(actor=actor)
+        return self.filter(assignments__in=assignments.filter(is_complete=False))
 
-    def submitted_by(self, actor):
+    def acted_on_by(self, actor):
         if isinstance(actor, str):
             return self.filter(events__actor__email=actor)
         else:
@@ -188,6 +191,7 @@ class CaseQuerySet (models.QuerySet):
 
 
 class Case (models.Model):
+    id = models.CharField(primary_key=True, max_length=64)
     workflow = models.ForeignKey('Workflow')
     current_state = models.ForeignKey('State')
     create_dt = models.DateTimeField(auto_now_add=True)
@@ -210,17 +214,25 @@ class Case (models.Model):
         assignment.actions=[self.workflow.initial_action]
         return assignment
 
-    def create_initial_event(self, actor=None, data=None):
-        return self.create_event(actor, self.workflow.initial_action, data=data)
+    def create_initial_event(self, actor=None, data=None, commit=False):
+        return self.create_event(actor, self.workflow.initial_action, data=data, commit=commit)
 
-    def create_event(self, actor, action, data=None):
-        return Event.objects.create(
+    def create_event(self, actor, action, data=None, commit=False):
+        event = Event(
             case=self,
             data=data,
             actor=actor,
             action=action,
             end_state=self.current_state,
         )
+        if commit:
+            event.save()
+        return event
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = uuid4()
+        return super().save(*args, **kwargs)
 
 
 class Actor (models.Model):
@@ -230,14 +242,15 @@ class Actor (models.Model):
 class Assignment (models.Model):
     actor = models.ForeignKey('Actor', related_name='assignments', null=True)
     token = models.CharField(max_length=64)
-    case = models.ForeignKey('Case', related_name='actors')
+    case = models.ForeignKey('Case', related_name='assignments')
     state = models.ForeignKey('State')
     actions = models.ManyToManyField('Action')
     expiration_dt = models.DateTimeField(null=True)
-    valid = models.BooleanField(default=True)
+    is_valid = models.BooleanField(default=True)
+    is_complete = models.BooleanField(default=False)
 
     def can_access_case(self, case):
-        if not self.valid:
+        if not self.is_valid:
             return False
         if case != self.case:
             return False
@@ -248,6 +261,10 @@ class Assignment (models.Model):
             self.can_access_case(case) and
             action in self.actions.all()
         )
+
+    def complete(self):
+        self.is_complete = True
+        self.save()
 
     def save(self, *args, **kwargs):
         if not self.token:
@@ -276,14 +293,21 @@ class Event (models.Model):
                 self[key] = value
 
         context = (self.action.state.workflow.context or {}).copy()
-        context['data'] = (self.case.get_latest_data() or {}).copy()
+        context['data'] = {**self.case.get_latest_data(), **self.data}
+        context['events'] = serialize_case_events(self.case)
 
         # Add in common methods
         context['assign'] = self._assign
         context['send_email'] = self._send_email
         context['change_state'] = self._change_state
 
+        # Add in the ability to raise errors
+        context['error'] = self.construct_handler_error
+
         return ObjectDict(context)
+
+    def get_assigner_email(self):
+        return settings.DEFAULT_FROM_EMAIL
 
     @transaction.atomic()
     def run_handler(self):
@@ -304,6 +328,9 @@ class Event (models.Model):
         # the event.
         self.end_state = self.case.current_state
         self.save()
+
+    def construct_handler_error(self, message):
+        return self.HandlerError(self, message)
 
     class HandlerError (Exception):
         # NOTE: handlers should fail loudly.
@@ -391,6 +418,6 @@ class Event (models.Model):
         send_mail(
             subject,
             body_template.render(context),
-            'admin@statelyapp.com',
+            self.get_assigner_email(),
             [assignment.actor.email],
         )
