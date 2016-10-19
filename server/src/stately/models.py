@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models, transaction
 from django.utils.text import slugify
 from jsonfield import JSONField
@@ -291,6 +292,9 @@ class Event (models.Model):
 
         return ObjectDict(context)
 
+    def get_assigner_email(self):
+        return settings.DEFAULT_FROM_EMAIL
+
     @transaction.atomic()
     def run_handler(self):
         action = self.action
@@ -397,6 +401,6 @@ class Event (models.Model):
         send_mail(
             subject,
             body_template.render(context),
-            'admin@statelyapp.com',
+            self.get_assigner_email(),
             [assignment.actor.email],
         )
