@@ -12,6 +12,7 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(log())
 }
 
+app.model(require('./models/user'))
 app.model(require('./models/case'))
 app.model(require('./models/case-list'))
 
