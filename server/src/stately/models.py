@@ -292,7 +292,7 @@ class Event (models.Model):
                 self[key] = value
 
         context = (self.action.state.workflow.context or {}).copy()
-        context['data'] = (self.case.get_latest_data() or {}).copy()
+        context['data'] = {**self.case.get_latest_data(), **self.data}
 
         # Add in common methods
         context['assign'] = self._assign
