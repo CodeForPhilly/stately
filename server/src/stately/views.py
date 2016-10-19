@@ -1,5 +1,6 @@
 import json
 from django.core import serializers
+from django.db import transaction
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
@@ -112,11 +113,12 @@ def create_case(request, workflow_slug):
     # Get the data from the request; create an initial event with the data and
     # run the event handler.
     data = json.loads(request.body.decode())
-    event = case.create_initial_event(actor, data)
-    try_event_handler(assignment, event)
+    with transaction.atomic():
+        event = case.create_initial_event(actor, data)
+        try_event_handler(assignment, event)
 
     # Return the latest state of the case relative to an anonymous actor.
-    response_data = serialize_case(event.case, assignment)
+    response_data = serialize_case(case, assignment)
     return JsonResponse(response_data)
 
 @handle_view_errors
@@ -155,12 +157,13 @@ def create_event(request, workflow_slug, case_id, action_slug):
     # Get the data from the request; create an event with the data and run the
     # event handler.
     data = json.loads(request.body.decode())
-    event = case.create_event(assignment.actor, action, data)
-    try_event_handler(assignment, event)
+    with transaction.atomic():
+        event = case.create_event(assignment.actor, action, data)
+        try_event_handler(assignment, event)
 
     # Return the latest state of the case relative to this assignment (TODO:
     # should this be relative to the actor?)
-    response_data = serialize_case(event.case, assignment)
+    response_data = serialize_case(case, assignment)
     return JsonResponse(response_data)
 
 @csrf_exempt
