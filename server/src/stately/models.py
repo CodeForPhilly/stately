@@ -302,7 +302,7 @@ class Event (models.Model):
         context['change_state'] = self._change_state
 
         # Add in the ability to raise errors
-        context['error'] = self.HandlerError
+        context['error'] = self.construct_handler_error
 
         return ObjectDict(context)
 
@@ -328,6 +328,9 @@ class Event (models.Model):
         # the event.
         self.end_state = self.case.current_state
         self.save()
+
+    def construct_handler_error(self, message):
+        return self.HandlerError(self, message)
 
     class HandlerError (Exception):
         # NOTE: handlers should fail loudly.
