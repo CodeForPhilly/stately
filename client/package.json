@@ -11,7 +11,9 @@
   "license": "MIT",
   "dependencies": {
     "choo": "^3.3.0",
+    "dom-notifications": "^1.1.0",
     "get-form-data": "^1.2.5",
+    "run-series": "^1.1.4",
     "sheet-router": "^4.0.0-0",
     "sheetify": "^5.1.1",
     "timeago.js": "^2.0.2",

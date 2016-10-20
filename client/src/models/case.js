@@ -1,4 +1,5 @@
 const http = require('choo/http')
+const series = require('run-series')
 
 const endpoint = 'http://localhost:8000/api/'
 
@@ -43,7 +44,11 @@ module.exports = {
 
       http.post(uri, { json: payload, withCredentials: true }, (err, response, body) => {
         if (err || response.statusCode !== 200) return done(new Error('Error updating case'))
-        send('case:receive', body, done)
+
+        series([
+          (cb) => send('case:receive', body, cb),
+          (cb) => send('ui:notify', { message: 'Case updated successfully', type: 'success' }, cb)
+        ], done)
       })
     },
     // create is the same as update except it redirects afterwards
@@ -53,10 +58,13 @@ module.exports = {
 
       http.post(uri, { json: payload, withCredentials: true }, (err, response, body) => {
         if (err || response.statusCode !== 200) return done(new Error('Error creating case'))
-        send('case:receive', body, () => {
-          const newPath = `${workflowSlug}/${body.id}/?token=${body.assignment.token}`
-          send('case:redirect', newPath, done)
-        })
+        const newPath = `${workflowSlug}/${body.id}/?token=${body.assignment.token}`
+
+        series([
+          (cb) => send('case:receive', body, cb),
+          (cb) => send('case:redirect', newPath, cb),
+          (cb) => send('ui:notify', { message: 'Case created successfully', type: 'success' }, cb)
+        ], done)
       })
     },
     redirect: (path, state, send, done) => {

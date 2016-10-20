@@ -66,5 +66,6 @@ module.exports = (state, prev, send) => {
     } else {
       send('case:create', { workflowSlug, payload })
     }
+    send('case:setCurrentAction') // unset currentAction
   }
 }
