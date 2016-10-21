@@ -8,6 +8,14 @@ const ActionForm = require('../components/action-form')
 module.exports = (state, prev, send) => {
   const { workflowSlug, caseId } = state.params
 
+  // Fetch the case here instead of onload because this view is reused by
+  // all cases / case types, and onload is only called when it's first mounted
+  if ((workflowSlug && state.case.workflow.slug !== workflowSlug) ||
+      (caseId && state.case.id !== caseId) ||
+      (!caseId && state.case.id)) {
+    send('case:fetch', { workflowSlug, caseId })
+  }
+
   // Determine what to show in action section
   const availableActions = state.case.state.actions
   const availableActionNames = availableActions.map((action) => action.name)
@@ -20,7 +28,7 @@ module.exports = (state, prev, send) => {
   const currentActionName = currentAction && currentAction.name
 
   return html`
-    <div onload=${onLoad}>
+    <div>
       <h1>
         ${state.case.workflow.name}
         ${state.case.id ? html`<small>#${state.case.id}</small>` : ''}
@@ -50,10 +58,6 @@ module.exports = (state, prev, send) => {
 
   function findAvailableAction (actionName) {
     return availableActions.find((availableAction) => availableAction.name === actionName)
-  }
-
-  function onLoad () {
-    send('case:fetch', { workflowSlug, caseId })
   }
 
   function onClickAction (actionName) {

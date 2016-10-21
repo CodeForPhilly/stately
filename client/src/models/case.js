@@ -6,7 +6,7 @@ const config = require('../config')
 module.exports = {
   namespace: 'case',
   state: {
-    workflow: '',
+    workflow: {},
     created: null,
     id: null,
     state: {
@@ -77,7 +77,7 @@ module.exports = {
           }
           return
         }
-        const newPath = `${workflowSlug}/${body.id}/`
+        const newPath = `/${workflowSlug}/${body.id}/`
 
         series([
           (cb) => send('case:receive', body, cb),
