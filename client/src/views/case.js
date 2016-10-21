@@ -2,7 +2,7 @@ const html = require('choo/html')
 
 const CaseData = require('../components/case-data')
 const CaseHistory = require('../components/case-history')
-const ActionButtons = require('../components/action-buttons')
+const ButtonGroup = require('../components/button-group')
 const ActionForm = require('../components/action-form')
 
 module.exports = (state, prev, send) => {
@@ -10,12 +10,14 @@ module.exports = (state, prev, send) => {
 
   // Determine what to show in action section
   const availableActions = state.case.state.actions
+  const availableActionNames = availableActions.map((action) => action.name)
   let currentAction
   if (state.case.currentAction) {
     currentAction = findAvailableAction(state.case.currentAction)
   } else if (availableActions.length === 1) {
     currentAction = availableActions[0]
   }
+  const currentActionName = currentAction && currentAction.name
 
   return html`
     <div onload=${onLoad}>
@@ -25,7 +27,7 @@ module.exports = (state, prev, send) => {
       </h1>
       ${state.case.id ? CurrentCase(state.case.data, state.case.events, state.case.state) : ''}
       ${availableActions.length > 1
-        ? ActionButtons(availableActions, currentAction, onClickAction)
+        ? ButtonGroup(availableActionNames, currentActionName, onClickAction)
         : ''}
       ${currentAction ? ActionForm(currentAction, onSubmitAction) : ''}
     </div>

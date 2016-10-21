@@ -5,19 +5,34 @@ const config = require('../config')
 module.exports = {
   namespace: 'caseList',
   state: {
-    cases: []
+    inbox: [],
+    history: [],
+    view: 'Inbox'
   },
   reducers: {
-    receive: (cases, state) => {
-      return { cases: cases }
+    receiveInbox: (cases, state) => {
+      return { inbox: cases }
+    },
+    receiveHistory: (cases, state) => {
+      return { history: cases }
+    },
+    setView: (newView, state) => {
+      return { view: newView }
     }
   },
   effects: {
-    fetch: (data, state, send, done) => {
+    fetchInbox: (data, state, send, done) => {
       const uri = `${config.endpoint}cases/awaiting/`
       http(uri, { json: true, withCredentials: true }, (err, response, body) => {
-        if (err || response.statusCode !== 200) return done(new Error('Error fetching case list'))
-        send('caseList:receive', body.cases, done)
+        if (err || response.statusCode !== 200) return done(new Error('Error fetching inbox'))
+        send('caseList:receiveInbox', body.cases, done)
+      })
+    },
+    fetchHistory: (data, state, send, done) => {
+      const uri = `${config.endpoint}cases/acted/`
+      http(uri, { json: true, withCredentials: true }, (err, response, body) => {
+        if (err || response.statusCode !== 200) return done(new Error('Error fetching history'))
+        send('caseList:receiveHistory', body.cases, done)
       })
     }
   }
