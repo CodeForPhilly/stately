@@ -281,7 +281,7 @@ class Assignment (models.Model):
 
     @property
     def is_awaiting(self):
-        return not is_complete
+        return not self.is_complete
 
     def can_access_case(self, case):
         if not self.is_valid:
