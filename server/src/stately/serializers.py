@@ -10,7 +10,7 @@ def try_json(string):
 def serialize_actor(actor):
     data = {
         'email': actor.email,
-    } if actor else None
+    } if actor and actor.email else None
     return data
 
 def serialize_case(case, assignment=None, default_actions=[]):

@@ -233,8 +233,8 @@ def get_current_actor(request):
     GET /api/actor
     """
     auth = get_session_auth(request.session)
-    response_data = serialize_actor(auth.actor)
-    return JsonResponse(response_data)
+    response_data = serialize_actor(auth.actor if auth else None)
+    return JsonResponse(response_data, safe=False if response_data is None else True)
 
 @csrf_exempt
 def forget_current_actor(request):
