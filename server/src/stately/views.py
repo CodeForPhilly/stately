@@ -1,9 +1,11 @@
 import json
 from django.core import serializers
-from django.http import HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from functools import wraps
+from .emails import send_login_email
+from .forms import SendAuthTokenForm
 from .models import *
 from .serializers import serialize_case, serialize_actor
 
@@ -43,6 +45,19 @@ def try_get_request_assignment(request):
     except Assignment.DoesNotExist:
         raise ViewError('Invalid actor token.', status=403)
 
+def try_get_authenticator(request):
+    try:
+        token = request.GET['token']
+    except KeyError:
+        raise ViewError('No actor token specified.', status=401)
+
+    try:
+        auth = ActorAuthenticator.objects.get(token=token, is_valid=True)
+        set_session_auth(request.session, auth)
+        return auth
+    except ActorAuthenticator.DoesNotExist:
+        raise ViewError('Invalid auth token.', status=403)
+
 def try_event_handler(assignment, event):
     try:
         event.run_handler()
@@ -58,19 +73,20 @@ def try_event_handler(assignment, event):
             'case': e.event.case.id,
 
         })
-def get_session_actor(session):
-    actor_id = session.get('actor_id')
-    if actor_id is not None:
-        # If there is an actor_id in the session, try to get the actor from
-        # that ID.
+
+def get_session_auth(session):
+    auth_token = session.get('auth_token')
+    if auth_token is not None:
+        # If there is an auth_token in the session, try to get the actor from
+        # that token.
         try:
-            return Actor.objects.get(pk=actor_id)
-        except Actor.DoesNotExist:
+            return ActorAuthenticator.objects.select_related('actor').get(token=auth_token)
+        except ActorAuthenticator.DoesNotExist:
             return None
 
-def set_session_actor(session, actor):
-    session['actor_id'] = actor.id if actor else None
-    return actor
+def set_session_auth(session, auth):
+    session['auth_token'] = auth.token if auth else None
+    return auth
 
 
 @csrf_exempt
@@ -164,6 +180,34 @@ def create_event(request, workflow_slug, case_id, action_slug):
     return JsonResponse(response_data)
 
 @csrf_exempt
+@handle_view_errors
+def send_auth_token(request):
+    """
+    POST /api/send-auth-token
+    """
+    data = json.loads(request.body.decode())
+
+    form = SendAuthTokenForm(data)
+    if not form.is_valid():
+        raise ViewError('Request is invalid.', status=400, details=form.errors)
+
+    actor, _ = Actor.objects.get_or_create(email=form.cleaned_data['email'])
+    auth = ActorAuthenticator.objects.create(actor=actor)
+    send_login_email(auth)
+    return HttpResponse(status=204)
+
+@csrf_exempt
+@handle_view_errors
+def authenticate(request):
+    """
+    POST /api/authenticate
+    """
+    auth = try_get_authenticator(request)
+    assert request.session.get('auth_token') == auth.token
+    response_data = serialize_actor(auth.actor)
+    return JsonResponse(response_data)
+
+@csrf_exempt
 def get_or_forget_current_actor(request):
     """
     GET,DELETE /api/actor
@@ -177,8 +221,8 @@ def get_current_actor(request):
     """
     GET /api/actor
     """
-    actor = get_session_actor(request.session)
-    response_data = serialize_actor(actor)
+    auth = get_session_auth(request.session)
+    response_data = serialize_actor(auth.actor)
     return JsonResponse(response_data)
 
 @csrf_exempt

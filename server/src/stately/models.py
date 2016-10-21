@@ -4,6 +4,7 @@ from django.utils.text import slugify
 from jsonfield import JSONField
 from uuid import uuid4
 from .serializers import serialize_actor, serialize_case_events
+from .emails import send_assignment_email
 
 
 def uniquely_slugify(value, unique_within_qs, uniquify=None, slug_field='slug', **kwargs):
@@ -239,6 +240,18 @@ class Actor (models.Model):
     email = models.EmailField()
 
 
+class ActorAuthenticator (models.Model):
+    token = models.CharField(max_length=64, primary_key=True)
+    actor = models.ForeignKey('Actor', related_name='auths', null=True)
+    generated_at = models.DateTimeField(auto_now_add=True)
+    is_valid = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = uuid4()
+        return super().save(*args, **kwargs)
+
+
 class Assignment (models.Model):
     actor = models.ForeignKey('Actor', related_name='assignments', null=True)
     token = models.CharField(max_length=64)
@@ -376,49 +389,11 @@ class Event (models.Model):
 
         # Send the assignment email, if desired
         if send_email:
-            self._send_email(assignment.token)
+            self._send_email(assignment)
 
         return assignment.token
 
     def _send_email(self, assignment_token):
-        from django.conf import settings
-        from django.core.mail import send_mail
-        from django.template import Context, Template
-
         assignment = assignment_token if isinstance(assignment_token, Assignment) \
                      else Assignment.objects.select_related('actor').get(token=assignment_token)
-
-        body_template = Template(
-            'You have been assigned to {{ workflow.name }} case #{{ case.id }}. '
-                '{% if actions|length == 0 %}'
-                    'Please review the case at the link below:\n\n'
-                '{% else %}'
-                    'You must '
-                    '{% if actions|length == 1 %}'
-                        '{{ actions.0.name }}'
-                    '{% else %}'
-                        '{% for action in actions %}'
-                            '{% if not forloop.first %}, {% endif %}'
-                            '{% if forloop.last %}or {% endif %}'
-                            '{{ action.name }}'
-                        '{% endfor %}'
-                    '{% endif %}'
-                    ' for the case to proceed. Please follow the link below:\n\n'
-                '{% endif %}'
-            '{{ settings.UI_SCHEME }}://{{ settings.UI_HOST }}/{{ workflow.slug }}/{{ case.id }}/?token={{ assignment.token }}'
-        )
-        context = Context({
-            'case': self.case,
-            'assignment': assignment,
-            'actions': assignment.actions.all(),
-            'workflow': self.case.workflow,
-            'settings': settings,
-        })
-
-        subject = '{} Case Assignment'.format(self.case.workflow.name)
-        send_mail(
-            subject,
-            body_template.render(context),
-            self.get_assigner_email(),
-            [assignment.actor.email],
-        )
+        send_assignment_email(self, assignment)
