@@ -25,18 +25,25 @@ def serialize_case(case, assignment=None, default_actions=[]):
         'data': case.get_latest_data(),
         'state': {
             'name': case.current_state.name,
-            'actions': [
-                {
-                    'name': action.name,
-                    'slug': action.slug,
-                    'template': try_json(action.template),
-                }
-                for action in (assignment.actions.filter(state=case.current_state) if assignment else default_actions)
-            ],
+            'actions': serialize_assignment_actions(assignment, case.current_state, default_actions),
         },
         'events': serialize_case_events(case),
     }
     return data
+
+def serialize_assignment_actions(assignment, state, default_actions=[]):
+    if assignment and not assignment.is_complete:
+        actions = assignment.actions.filter(state=state)
+    else:
+        actions = default_actions
+    return [serialize_action(action) for action in actions]
+
+def serialize_action(action):
+    return {
+        'name': action.name,
+        'slug': action.slug,
+        'template': try_json(action.template),
+    }
 
 def serialize_case_events(case):
     data = [
