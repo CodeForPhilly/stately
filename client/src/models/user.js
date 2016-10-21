@@ -17,7 +17,9 @@ module.exports = {
       const opts = { json: true, withCredentials: true }
 
       http(uri, opts, (err, response, body) => {
-        if (err || response.statusCode !== 200) return done(new Error('Error fetching user'))
+        if (err || response.statusCode !== 200) {
+          return send('ui:error', 'Error fetching user', done)
+        }
         send('user:receive', body, done)
       })
     },
@@ -28,8 +30,10 @@ module.exports = {
       const confirmMsg = `An email was sent to ${email} with a link to login`
 
       http.post(uri, opts, (err, response, body) => {
-        if (err || response.statusCode !== 204) return done(new Error('Error sending auth token'))
-        send('ui:notify', { message: confirmMsg, duration: 10000 }, done)
+        if (err || response.statusCode !== 204) {
+          return send('ui:error', 'Error sending auth token', done)
+        }
+        send('ui:info', { message: confirmMsg, duration: 10000 }, done)
       })
     },
     signOut: (data, state, send, done) => {
@@ -37,7 +41,9 @@ module.exports = {
       const opts = { withCredentials: true }
 
       http.del(uri, opts, (err, response, body) => {
-        if (err || response.statusCode !== 204) return done(new Error('Error logging out'))
+        if (err || response.statusCode !== 204) {
+          return send('ui:error', 'Error signing out', done)
+        }
         const emptyState = module.exports.state
 
         series([

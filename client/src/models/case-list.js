@@ -24,14 +24,18 @@ module.exports = {
     fetchInbox: (data, state, send, done) => {
       const uri = `${config.endpoint}cases/awaiting/`
       http(uri, { json: true, withCredentials: true }, (err, response, body) => {
-        if (err || response.statusCode !== 200) return done(new Error('Error fetching inbox'))
+        if (err || response.statusCode !== 200) {
+          return send('ui:error', 'Error fetching inbox', done)
+        }
         send('caseList:receiveInbox', body.cases, done)
       })
     },
     fetchHistory: (data, state, send, done) => {
       const uri = `${config.endpoint}cases/acted/`
       http(uri, { json: true, withCredentials: true }, (err, response, body) => {
-        if (err || response.statusCode !== 200) return done(new Error('Error fetching history'))
+        if (err || response.statusCode !== 200) {
+          return send('ui:error', 'Error fetching history', done)
+        }
         send('caseList:receiveHistory', body.cases, done)
       })
     }

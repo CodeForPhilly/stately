@@ -30,6 +30,26 @@ module.exports = {
           send('ui:removeNotification', _id, done)
         }, duration)
       })
+    },
+    success: (data, state, send, done) => {
+      const message = typeof data === 'string' ? data : data.message
+      const payload = { message, type: 'success' }
+      send('ui:notify', payload, done)
+    },
+    info: (data, state, send, done) => {
+      const message = typeof data === 'string' ? data : data.message
+      const payload = { message, type: 'info' }
+      send('ui:notify', payload, done)
+    },
+    warning: (data, state, send, done) => {
+      const message = typeof data === 'string' ? data : data.message
+      const payload = { message, type: 'warning' }
+      send('ui:notify', payload, done)
+    },
+    error: (data, state, send, done) => {
+      const message = typeof data === 'string' ? data : data.message
+      const payload = { message, type: 'error' }
+      send('ui:notify', payload, done)
     }
   }
 }

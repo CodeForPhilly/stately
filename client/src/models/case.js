@@ -34,7 +34,9 @@ module.exports = {
       const opts = { json: true, withCredentials: true }
 
       http(uri, opts, (err, response, body) => {
-        if (err || response.statusCode !== 200) return done(new Error('Error fetching case'))
+        if (err || response.statusCode !== 200) {
+          return send('ui:error', 'Error fetching case', done)
+        }
         send('case:receive', body, done)
       })
     },
@@ -45,11 +47,18 @@ module.exports = {
       const opts = { json: payload, withCredentials: true }
 
       http.post(uri, opts, (err, response, body) => {
-        if (err || response.statusCode !== 200) return done(new Error('Error updating case'))
+        if (err || response.statusCode !== 200) {
+          if (body.handler_error) {
+            send('ui:warning', { message: body.handler_error, duration: 10 }, done)
+          } else {
+            send('ui:error', 'Error updating case', done)
+          }
+          return
+        }
 
         series([
           (cb) => send('case:receive', body, cb),
-          (cb) => send('ui:notify', { message: 'Case updated successfully', type: 'success' }, cb)
+          (cb) => send('ui:success', 'Case updated successfully', cb)
         ], done)
       })
     },
@@ -60,13 +69,20 @@ module.exports = {
       const opts = { json: payload, withCredentials: true }
 
       http.post(uri, opts, (err, response, body) => {
-        if (err || response.statusCode !== 200) return done(new Error('Error creating case'))
+        if (err || response.statusCode !== 200) {
+          if (body.handler_error) {
+            send('ui:warning', { message: body.handler_error, duration: 10 }, done)
+          } else {
+            send('ui:error', 'Error creating case', done)
+          }
+          return
+        }
         const newPath = `${workflowSlug}/${body.id}/`
 
         series([
           (cb) => send('case:receive', body, cb),
           (cb) => send('case:redirect', newPath, cb),
-          (cb) => send('ui:notify', { message: 'Case created successfully', type: 'success' }, cb)
+          (cb) => send('ui:success', 'Case created successfully', cb)
         ], done)
       })
     },
