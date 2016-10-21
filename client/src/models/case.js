@@ -61,7 +61,7 @@ module.exports = {
 
       http.post(uri, opts, (err, response, body) => {
         if (err || response.statusCode !== 200) return done(new Error('Error creating case'))
-        const newPath = `${workflowSlug}/${body.id}/?token=${body.assignment.token}`
+        const newPath = `${workflowSlug}/${body.id}/`
 
         series([
           (cb) => send('case:receive', body, cb),

@@ -237,13 +237,32 @@ class Case (models.Model):
 
 
 class Actor (models.Model):
-    email = models.EmailField()
+    email = models.EmailField(null=True)
+
+    def is_assigned_to(self, case):
+        return Assignment.objects\
+            .filter(actor=self, case=case)\
+            .exists()
+
+    def get_assignments_for(self, case, with_assignments=False):
+        assignments = Assignment.objects.filter(actor=self, case=case)
+
+        if with_assignments:
+            return assignments.prefetch_related('assignments')
+        else:
+            return assignments
+
+    def get_latest_assignment_for(self, case, with_assignments=False):
+        try:
+            return self.get_assignments_for(case).order_by('-assigned_dt')[0]
+        except IndexError:
+            return None
 
 
 class ActorAuthenticator (models.Model):
     token = models.CharField(max_length=64, primary_key=True)
     actor = models.ForeignKey('Actor', related_name='auths', null=True)
-    generated_at = models.DateTimeField(auto_now_add=True)
+    generated_dt = models.DateTimeField(auto_now_add=True)
     is_valid = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
@@ -254,12 +273,10 @@ class ActorAuthenticator (models.Model):
 
 class Assignment (models.Model):
     actor = models.ForeignKey('Actor', related_name='assignments', null=True)
-    token = models.CharField(max_length=64)
     case = models.ForeignKey('Case', related_name='assignments')
     state = models.ForeignKey('State')
     actions = models.ManyToManyField('Action')
-    expiration_dt = models.DateTimeField(null=True)
-    is_valid = models.BooleanField(default=True)
+    assigned_dt = models.DateTimeField(auto_now_add=True)
     is_complete = models.BooleanField(default=False)
 
     def can_access_case(self, case):
@@ -278,11 +295,6 @@ class Assignment (models.Model):
     def complete(self):
         self.is_complete = True
         self.save()
-
-    def save(self, *args, **kwargs):
-        if not self.token:
-            self.token = uuid4()
-        return super().save(*args, **kwargs)
 
 
 class Event (models.Model):
@@ -391,9 +403,12 @@ class Event (models.Model):
         if send_email:
             self._send_email(assignment)
 
-        return assignment.token
+        return assignment.pk
 
-    def _send_email(self, assignment_token):
-        assignment = assignment_token if isinstance(assignment_token, Assignment) \
-                     else Assignment.objects.select_related('actor').get(token=assignment_token)
-        send_assignment_email(self, assignment)
+    def _send_email(self, assignment):
+        if not isinstance(assignment, Assignment):
+            assignment = Assignment.objects\
+                .select_related('actor')\
+                .get(pk=assignment)
+        auth = ActorAuthenticator.objects.create(actor=assignment.actor)
+        send_assignment_email(self, assignment, auth)

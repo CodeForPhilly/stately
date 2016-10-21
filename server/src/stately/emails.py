@@ -34,7 +34,7 @@ def send_login_email(auth, **email_kwargs):
     )
 
 
-def send_assignment_email(event, assignment):
+def send_assignment_email(event, assignment, auth):
     body_template = Template(
         'You have been assigned to {{ workflow.name }} case #{{ case.id }}. '
             '{% if actions|length == 0 %}'
@@ -52,11 +52,12 @@ def send_assignment_email(event, assignment):
                 '{% endif %}'
                 ' for the case to proceed. Please follow the link below:\n\n'
             '{% endif %}'
-        '{{ settings.UI_SCHEME }}://{{ settings.UI_HOST }}/{{ workflow.slug }}/{{ case.id }}/?token={{ assignment.token }}'
+        '{{ settings.UI_SCHEME }}://{{ settings.UI_HOST }}/{{ workflow.slug }}/{{ case.id }}/?token={{ auth.token }}'
     )
     context = Context({
         'case': event.case,
         'assignment': assignment,
+        'auth': auth,
         'actions': assignment.actions.all(),
         'workflow': event.case.workflow,
         'settings': settings,

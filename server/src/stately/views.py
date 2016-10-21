@@ -32,31 +32,28 @@ def handle_view_errors(view_func):
             return e.json_response()
     return wrapper
 
-def try_get_request_assignment(request):
-    try:
-        token = request.GET['token']
-    except KeyError:
-        raise ViewError('No actor token specified.', status=401)
-
-    try:
-        assignment = Assignment.objects.get(token=token, is_valid=True)
-        set_session_actor(request.session, assignment.actor)
-        return assignment
-    except Assignment.DoesNotExist:
-        raise ViewError('Invalid actor token.', status=403)
+def requires_auth_token(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        request.auth = try_get_authenticator(request)
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 def try_get_authenticator(request):
-    try:
+    if 'token' in request.GET:
         token = request.GET['token']
-    except KeyError:
+    elif 'auth_token' in request.session:
+        token = request.session.get('auth_token')
+    else:
         raise ViewError('No actor token specified.', status=401)
 
     try:
         auth = ActorAuthenticator.objects.get(token=token, is_valid=True)
-        set_session_auth(request.session, auth)
-        return auth
     except ActorAuthenticator.DoesNotExist:
-        raise ViewError('Invalid auth token.', status=403)
+        raise ViewError('Invalid actor token.', status=403)
+
+    set_session_auth(request.session, auth)
+    return auth
 
 def try_event_handler(assignment, event):
     try:
@@ -87,6 +84,16 @@ def get_session_auth(session):
 def set_session_auth(session, auth):
     session['auth_token'] = auth.token if auth else None
     return auth
+
+def get_or_set_session_auth(session):
+    auth = get_session_auth(session)
+    created = False
+    if not auth:
+        actor = Actor.objects.create(email=None)
+        auth = ActorAuthenticator(actor=actor)
+        set_session_auth(session, auth)
+        created = True
+    return auth, created
 
 
 @csrf_exempt
@@ -122,7 +129,8 @@ def create_case(request, workflow_slug):
 
     # Pull the actor off of the session and create an assignment for the case's
     # initial action.
-    actor = get_session_actor(request.session)
+    auth, _ = get_or_set_session_auth(request.session)
+    actor = auth.actor
     assignment = case.create_initial_assignment(actor)
 
     # Get the data from the request; create an initial event with the data and
@@ -136,17 +144,19 @@ def create_case(request, workflow_slug):
     return JsonResponse(response_data)
 
 @handle_view_errors
+@requires_auth_token
 def get_case(request, workflow_slug, case_id):
     """
     GET /api/:workflow_slug/:case_id
     """
     # Get the assignment and case; verify that the assignment affords access to
     # the case.
-    assignment = try_get_request_assignment(request)
     case = get_object_or_404(Case, workflow__slug=workflow_slug, pk=case_id)
 
-    if not assignment.can_access_case(case):
-        return JsonResponse({'error': 'You do not have access to this case.'}, status=403)
+    actor = request.auth.actor
+    assignment = actor.get_latest_assignment_for(case)
+    if assignment is None:
+        raise ViewError('You do not have access to this case.', status=403)
 
     # Return the latest state of the case relative to this assignment (TODO:
     # should this be relative to the actor?)
@@ -155,17 +165,17 @@ def get_case(request, workflow_slug, case_id):
 
 @csrf_exempt
 @handle_view_errors
+@requires_auth_token
 def create_event(request, workflow_slug, case_id, action_slug):
     """
     POST /api/:workflow_slug/:case_id/:action_slug
     """
     # Get the assignment, case, and action; verify that the assignment affords
     # the action on the case.
-    assignment = try_get_request_assignment(request)
     case = get_object_or_404(Case, workflow__slug=workflow_slug, pk=case_id)
     action = get_object_or_404(case.current_state.actions, slug=action_slug)
-
-    if not assignment.can_take_action(case, action):
+    assignment = request.auth.actor.get_latest_assignment_for(case, with_assignments=True)
+    if action not in assignment.actions.all():
         raise ViewError('You are not assigned to take this action on this case.', status=403)
 
     # Get the data from the request; create an event with the data and run the
@@ -198,13 +208,13 @@ def send_auth_token(request):
 
 @csrf_exempt
 @handle_view_errors
+@requires_auth_token
 def authenticate(request):
     """
     POST /api/authenticate
     """
-    auth = try_get_authenticator(request)
-    assert request.session.get('auth_token') == auth.token
-    response_data = serialize_actor(auth.actor)
+    assert request.auth and request.session.get('auth_token') == request.auth.token
+    response_data = serialize_actor(request.auth.actor)
     return JsonResponse(response_data)
 
 @csrf_exempt
@@ -217,6 +227,7 @@ def get_or_forget_current_actor(request):
     elif request.method == 'DELETE':
         return forget_current_actor(request)
 
+@handle_view_errors
 def get_current_actor(request):
     """
     GET /api/actor
@@ -230,24 +241,29 @@ def forget_current_actor(request):
     """
     DELETE /api/actor
     """
-    actor = set_session_actor(request.session, None)
-    response_data = serialize_actor(actor)
-    return JsonResponse(response_data)
+    set_session_actor(request.session, None)
+    assert request.session.get('auth_token') is None
+    response_data = serialize_actor(None)
+    return HttpResponse(status=204)
 
+@handle_view_errors
+@requires_auth_token
 def get_cases_awaiting_action(request):
     """
     GET /api/cases/awaiting
     """
-    actor = get_session_actor(request.session)
+    actor = request.auth.actor
     cases = Case.objects.awaiting_action_by(actor)
     response_data = {'cases': [serialize_case(c) for c in cases]}
     return JsonResponse(response_data)
 
+@handle_view_errors
+@requires_auth_token
 def get_cases_acted_on(request):
     """
     GET /api/cases/acted
     """
-    actor = get_session_actor(request.session)
+    actor = request.auth.actor
     cases = Case.objects.acted_on_by(actor)
     response_data = {'cases': [serialize_case(c) for c in cases]}
     return JsonResponse(response_data)

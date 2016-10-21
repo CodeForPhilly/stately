@@ -23,9 +23,6 @@ def serialize_case(case, assignment=None, default_actions=[]):
             'name': case.workflow.name,
         },
         'data': case.get_latest_data(),
-        'assignment': {
-            'token': assignment.token,
-        } if assignment else None,
         'state': {
             'name': case.current_state.name,
             'actions': [
