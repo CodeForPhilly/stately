@@ -28,6 +28,10 @@ states:  # The first state is always the initial state.
             if actor == None:
                 change_state('Awaiting Verification')
                 assign(data.initiator_email, send_email=True)
+            elif actor.email != data.initiator_email:
+                raise error('You may not submit a request on behalf of another '
+                            'employee. Please log out of your account before '
+                            'submitting this request.')
             else:
                 change_state('Awaiting Supervisor Approval')
                 assign(data.supervisor_email, send_email=True)
