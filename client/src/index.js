@@ -7,6 +7,7 @@ const CaseView = require('./views/case')
 const CaseListView = require('./views/case-list')
 const HomeView = require('./views/home')
 const SignInView = require('./views/sign-in')
+const VerifyView = require('./views/verify')
 const config = require('./config')
 
 const app = choo()
@@ -37,7 +38,8 @@ function initialize () {
       route('/:caseId', Layout(CaseView))
     ]),
     route('/cases', Layout(CaseListView)),
-    route('/sign-in', Layout(SignInView))
+    route('/sign-in', Layout(SignInView)),
+    route('/verify', Layout(VerifyView))
   ])
 
   const tree = app.start()
