@@ -25,6 +25,17 @@ states:  # The first state is always the initial state.
               field_type: email
               required: true
         handler: |
+            if actor == None:
+                change_state('Awaiting Verification')
+                assign(data.initiator_email, send_email=True)
+            else:
+                change_state('Awaiting Supervisor Approval')
+                assign(data.supervisor_email, send_email=True)
+
+  - name: Awaiting Verification
+    actions:
+      - name: Verify
+        handler: |
             change_state('Awaiting Supervisor Approval')
             assign(data.supervisor_email, send_email=True)
 
