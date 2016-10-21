@@ -43,7 +43,7 @@ module.exports = (state, prev, send) => {
 
   function navigate (workflowSlug, id) {
     return function (event) {
-      const path = `${workflowSlug}/${id}`
+      const path = `/${workflowSlug}/${id}`
       send('case:redirect', path)
       event.preventDefault()
     }
