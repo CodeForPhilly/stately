@@ -32,7 +32,7 @@ def serialize_case(case, assignment=None, default_actions=[]):
     return data
 
 def serialize_assignment_actions(assignment, state, default_actions=[]):
-    if assignment and not assignment.is_complete:
+    if assignment and assignment.is_awaiting:
         actions = assignment.actions.filter(state=state)
     else:
         actions = default_actions

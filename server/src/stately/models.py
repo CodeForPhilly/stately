@@ -279,6 +279,10 @@ class Assignment (models.Model):
     assigned_dt = models.DateTimeField(auto_now_add=True)
     is_complete = models.BooleanField(default=False)
 
+    @property
+    def is_awaiting(self):
+        return not is_complete
+
     def can_access_case(self, case):
         if not self.is_valid:
             return False
