@@ -1,6 +1,6 @@
 const http = require('choo/http')
 
-const endpoint = 'http://localhost:8000/api/'
+const config = require('../config')
 
 module.exports = {
   namespace: 'caseList',
@@ -14,7 +14,7 @@ module.exports = {
   },
   effects: {
     fetch: (data, state, send, done) => {
-      const uri = `${endpoint}cases/awaiting/`
+      const uri = `${config.endpoint}cases/awaiting/`
       http(uri, { json: true, withCredentials: true }, (err, response, body) => {
         if (err || response.statusCode !== 200) return done(new Error('Error fetching case list'))
         send('caseList:receive', body.cases, done)

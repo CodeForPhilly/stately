@@ -1,5 +1,4 @@
 const html = require('choo/html')
-const qs = require('sheet-router/qs')
 
 const CaseData = require('../components/case-data')
 const CaseHistory = require('../components/case-history')
@@ -8,7 +7,6 @@ const ActionForm = require('../components/action-form')
 
 module.exports = (state, prev, send) => {
   const { workflowSlug, caseId } = state.params
-  const token = qs(window.location.search).token // choo v4 makes this easier
 
   // Determine what to show in action section
   const availableActions = state.case.state.actions
@@ -53,7 +51,7 @@ module.exports = (state, prev, send) => {
   }
 
   function onLoad () {
-    send('case:fetch', { workflowSlug, caseId, token })
+    send('case:fetch', { workflowSlug, caseId })
   }
 
   function onClickAction (actionName) {
@@ -62,7 +60,7 @@ module.exports = (state, prev, send) => {
 
   function onSubmitAction (actionSlug, payload) {
     if (caseId) {
-      send('case:update', { workflowSlug, actionSlug, payload, caseId, token })
+      send('case:update', { workflowSlug, actionSlug, payload, caseId })
     } else {
       send('case:create', { workflowSlug, payload })
     }

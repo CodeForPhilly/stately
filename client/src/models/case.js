@@ -1,7 +1,7 @@
 const http = require('choo/http')
 const series = require('run-series')
 
-const endpoint = 'http://localhost:8000/api/'
+const config = require('../config')
 
 module.exports = {
   namespace: 'case',
@@ -28,21 +28,23 @@ module.exports = {
   effects: {
     fetch: (data, state, send, done) => {
       const { workflowSlug, caseId, token } = data
-      let uri = `${endpoint}${workflowSlug}/`
+      let uri = `${config.endpoint}${workflowSlug}/`
       if (caseId) uri += `${caseId}/`
       if (token) uri += `?token=${token}`
+      const opts = { json: true, withCredentials: true }
 
-      http(uri, { json: true, withCredentials: true }, (err, response, body) => {
+      http(uri, opts, (err, response, body) => {
         if (err || response.statusCode !== 200) return done(new Error('Error fetching case'))
         send('case:receive', body, done)
       })
     },
     update: (data, state, send, done) => {
       const { workflowSlug, actionSlug, payload, caseId, token } = data
-      let uri = `${endpoint}${workflowSlug}/${caseId}/${actionSlug}/`
+      let uri = `${config.endpoint}${workflowSlug}/${caseId}/${actionSlug}/`
       if (token) uri += `?token=${token}`
+      const opts = { json: payload, withCredentials: true }
 
-      http.post(uri, { json: payload, withCredentials: true }, (err, response, body) => {
+      http.post(uri, opts, (err, response, body) => {
         if (err || response.statusCode !== 200) return done(new Error('Error updating case'))
 
         series([
@@ -54,9 +56,10 @@ module.exports = {
     // create is the same as update except it redirects afterwards
     create: (data, state, send, done) => {
       const { workflowSlug, payload } = data
-      const uri = `${endpoint}${workflowSlug}/`
+      const uri = `${config.endpoint}${workflowSlug}/`
+      const opts = { json: payload, withCredentials: true }
 
-      http.post(uri, { json: payload, withCredentials: true }, (err, response, body) => {
+      http.post(uri, opts, (err, response, body) => {
         if (err || response.statusCode !== 200) return done(new Error('Error creating case'))
         const newPath = `${workflowSlug}/${body.id}/?token=${body.assignment.token}`
 

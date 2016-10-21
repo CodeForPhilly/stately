@@ -21,9 +21,29 @@ module.exports = (user) => {
             <li><a href="/indebtedness">Indebtedness</a></li>
           </ul>
 
-          ${user.email ? html`<p class="navbar-text navbar-right">Signed in as ${user.email}</p>` : ''}
+          ${user.email
+              ? UserSignedIn(user)
+              : UserNotSignedIn()}
         </div>
       </div>
     </nav>
   `
+
+  function UserSignedIn (user) {
+    return html`
+      <p class="navbar-text navbar-right">
+        Signed in as ${user.email}
+      </p>
+    `
+  }
+
+  function UserNotSignedIn () {
+    return html`
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+          <a href="/sign-in">Sign in</a>
+        </li>
+      </ul>
+    `
+  }
 }
