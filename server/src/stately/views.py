@@ -241,7 +241,7 @@ def forget_current_actor(request):
     """
     DELETE /api/actor
     """
-    set_session_actor(request.session, None)
+    set_session_auth(request.session, None)
     assert request.session.get('auth_token') is None
     response_data = serialize_actor(None)
     return HttpResponse(status=204)
