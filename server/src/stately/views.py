@@ -90,7 +90,7 @@ def get_or_set_session_auth(session):
     created = False
     if not auth:
         actor = Actor.objects.create(email=None)
-        auth = ActorAuthenticator(actor=actor)
+        auth = ActorAuthenticator.objects.create(actor=actor)
         set_session_auth(session, auth)
         created = True
     return auth, created

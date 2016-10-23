@@ -232,7 +232,7 @@ class Case (models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = uuid4()
+            self.id = str(uuid4())
         return super().save(*args, **kwargs)
 
 
@@ -267,7 +267,7 @@ class ActorAuthenticator (models.Model):
 
     def save(self, *args, **kwargs):
         if not self.token:
-            self.token = uuid4()
+            self.token = str(uuid4())
         return super().save(*args, **kwargs)
 
 
