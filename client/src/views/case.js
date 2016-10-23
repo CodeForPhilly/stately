@@ -7,12 +7,12 @@ const ActionForm = require('../components/action-form')
 
 module.exports = (state, prev, send) => {
   const { workflowSlug, caseId } = state.params
+  const { prevWorkflowSlug, prevCaseId } = prev.params
 
   // Fetch the case here instead of onload because this view is reused by
   // all cases / case types, and onload is only called when it's first mounted
-  if ((workflowSlug && state.case.workflow.slug !== workflowSlug) ||
-      (caseId && state.case.id !== caseId) ||
-      (!caseId && state.case.id)) {
+  if (workflowSlug !== prev.params.workflowSlug || caseId !== prev.params.caseId) {
+    console.log(state.params, prev.params)
     send('case:fetch', { workflowSlug, caseId })
   }
 
