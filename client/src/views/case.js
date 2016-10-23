@@ -11,7 +11,6 @@ module.exports = (state, prev, send) => {
   // Fetch the case here instead of onload because this view is reused by
   // all cases / case types, and onload is only called when it's first mounted
   if (workflowSlug !== prev.params.workflowSlug || caseId !== prev.params.caseId) {
-    console.log(state.params, prev.params)
     send('case:fetch', { workflowSlug, caseId })
   }
 
