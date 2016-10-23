@@ -1,6 +1,6 @@
 const html = require('choo/html')
 
-module.exports = (user) => {
+module.exports = (user, signOutCallback) => {
   return html`
     <nav class="navbar navbar-default">
       <div class="container">
@@ -32,7 +32,8 @@ module.exports = (user) => {
   function UserSignedIn (user) {
     return html`
       <p class="navbar-text navbar-right">
-        Signed in as ${user.email}
+        Signed in as ${user.email}.
+        <a href="#" onclick=${signOut}>Sign out</a>.
       </p>
     `
   }
@@ -45,5 +46,12 @@ module.exports = (user) => {
         </li>
       </ul>
     `
+  }
+
+  function signOut (evt) {
+    signOutCallback && signOutCallback()
+
+    evt.preventDefault()
+    evt.stopPropagation()
   }
 }

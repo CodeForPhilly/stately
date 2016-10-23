@@ -11,7 +11,7 @@ module.exports = (CurrentView) => (state, prev, send) => {
 
   return html`
     <main onload=${onLoad}>
-      ${NavBar(state.user)}
+      ${NavBar(state.user, onSignOut)}
       ${notificationsEl}
       <div class="container">
         ${CurrentView(state, prev, send)}
@@ -21,5 +21,9 @@ module.exports = (CurrentView) => (state, prev, send) => {
 
   function onLoad () {
     send('user:fetch')
+  }
+
+  function onSignOut () {
+    send('user:signOut')
   }
 }
