@@ -192,7 +192,6 @@ class CaseQuerySet (models.QuerySet):
 
 
 class Case (models.Model):
-    id = models.CharField(primary_key=True, max_length=64)
     workflow = models.ForeignKey('Workflow')
     current_state = models.ForeignKey('State')
     create_dt = models.DateTimeField(auto_now_add=True)
@@ -229,11 +228,6 @@ class Case (models.Model):
         if commit:
             event.save()
         return event
-
-    def save(self, *args, **kwargs):
-        if not self.id:
-            self.id = str(uuid4())
-        return super().save(*args, **kwargs)
 
 
 class Actor (models.Model):
